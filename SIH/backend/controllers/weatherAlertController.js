@@ -1,4 +1,8 @@
 /**
+ * @module controllers/weatherAlertController
+ * @description Severe weather alerts & SSE broadcast streaming controller.
+ */
+/**
  * Weather Alert Controllers: SSE live broadcast stream + on-demand nowcast check.
  */
 
