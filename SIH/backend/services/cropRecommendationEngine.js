@@ -1,4 +1,8 @@
 /**
+ * @module services/cropRecommendationEngine
+ * @description Soil texture, moisture, rainfall anomaly, and location-aware crop recommendation engine.
+ */
+/**
  * Location, Season, Weather and Visual Soil Aware Crop Recommendation Engine
  */
 export const calculateCropSuitability = ({
