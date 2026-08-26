@@ -1,4 +1,8 @@
 /**
+ * @module data/locations
+ * @description Geospatial location records and reverse-geocoding lookup database.
+ */
+/**
  * Location and Agro-Meteorological Database for Odisha Districts & Blocks
  * Prototype Mock Layer with realistic meteorological values
  */
