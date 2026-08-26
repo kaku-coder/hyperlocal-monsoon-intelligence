@@ -1,4 +1,8 @@
 /**
+ * @module services/weatherAlertService
+ * @description Severe weather warning aggregation and threshold check service.
+ */
+/**
  * Weather Alert Service: Real-Time Nowcast → Farmer SMS Dispatch → SSE Broadcast
  *
  * Pipeline:
