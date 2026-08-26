@@ -1,4 +1,8 @@
 /**
+ * @module services/soilVisionService
+ * @description Vision AI processing service for soil sample classification.
+ */
+/**
  * Image Quality Validator
  * Validates image size, format, basic brightness/soil coverage heuristics.
  */
