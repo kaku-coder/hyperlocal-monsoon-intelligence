@@ -1,4 +1,8 @@
 /**
+ * @module services/api
+ * @description Axios HTTP client for backend REST API endpoints.
+ */
+/**
  * API Service Client for Frontend
  * Connects to Express Backend with automatic fallback if backend is momentarily unreachable.
  * @module Services/API
