@@ -1,4 +1,8 @@
 /**
+ * @module utils/tts
+ * @description Web Speech API Text-to-Speech audio synthesis helper.
+ */
+/**
  * Universal Text-to-Speech (TTS) Utility
  * Supports Odia (or), Hindi (hi), and English (en) audio synthesis.
  * Uses Google Translate Audio API for natural pronunciation across all OS/Browsers.
