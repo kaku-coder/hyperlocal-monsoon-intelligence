@@ -1,3 +1,7 @@
+/**
+ * @module components/common/WeatherBroadcastBanner
+ * @description Real-time weather alert SSE banner component.
+ */
 import React, { useEffect, useState } from 'react';
 import { subscribeWeatherAlertsSSE } from '../../services/api';
 import { AlertTriangle, CloudRain, Radio, X } from 'lucide-react';
