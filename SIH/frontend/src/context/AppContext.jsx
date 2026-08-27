@@ -1,3 +1,7 @@
+/**
+ * @module context/AppContext
+ * @description Global state provider for user location, language, and weather metrics.
+ */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { fetchDistricts, fetchBlocks, fetchPanchayats, fetchForecast, fetchMeApi, logoutUserApi, getLocalFallbackBlocks, normalizeDistrictName, subscribeWeatherAlertsSSE } from '../services/api';
 
