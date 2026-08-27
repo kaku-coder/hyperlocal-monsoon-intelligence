@@ -1,4 +1,8 @@
 /**
+ * @module utils/localization
+ * @description Multi-lingual translation strings for regional languages.
+ */
+/**
  * Full-App Multi-lingual Localization (English, Hindi, Odia)
  * Covers: Landing, CommandCenter, FarmerMode, CropAdvisory, RiskMap,
  *         Forecast, ClimateSignals, Historical, Explainability,
