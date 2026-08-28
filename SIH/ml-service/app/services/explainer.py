@@ -1,3 +1,4 @@
+"""Explainer Module - SHAP & Feature Attribution Generator"""
 from typing import List, Dict, Any
 from app.schemas.prediction import PredictionRequest, FeatureContribution, ExplainabilityResponse
 from app.services.predictor import predictor
