@@ -1,3 +1,4 @@
+"""Nowcaster Module - Short-term Radar Precipitation Forecasting Engine"""
 """
 Real-Time Nowcast Engine (ML + Live Weather).
 Fetches live Open-Meteo hourly forecasts for any lat/lon, runs the calibrated
