@@ -1,3 +1,4 @@
+"""Historical ML Module - Extended range climatology and XAI trend analysis"""
 """
 Historical Analysis ML Engine
 Tasks:
