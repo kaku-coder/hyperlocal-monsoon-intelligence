@@ -1,3 +1,4 @@
+"""Prediction Schemas - Request and response datatypes for ML endpoints"""
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
