@@ -1,3 +1,7 @@
+/**
+ * @module middleware/auth.middleware
+ * @description JWT token validation and session authentication middleware.
+ */
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 
