@@ -1,3 +1,7 @@
+/**
+ * @module routes/weatherAlerts
+ * @description Severe weather alert SSE broadcast route handlers.
+ */
 import express from "express";
 import {
   streamWeatherAlerts,
