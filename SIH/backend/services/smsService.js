@@ -1,4 +1,8 @@
 /**
+ * @module services/smsService
+ * @description Twilio / Fast2SMS gateway SMS broadcast service.
+ */
+/**
  * SMS Gateway Service: Fast2SMS / Twilio Integration for Real Mobile SMS Dispatch
  * Supports production SMS delivery with automatic prototype fallback logging.
  */
