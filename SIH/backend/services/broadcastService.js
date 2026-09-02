@@ -1,4 +1,8 @@
 /**
+ * @module services/broadcastService
+ * @description Server-Sent Events (SSE) live alert broadcast client registry.
+ */
+/**
  * AI Auto-Broadcast Service
  * -------------------------
  * Fully automatic multilingual broadcast pipeline — the AI composes the
