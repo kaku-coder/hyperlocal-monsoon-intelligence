@@ -1,3 +1,7 @@
+/**
+ * @module routes/index
+ * @description Central Express API router mapping authentication, soil, and weather endpoints.
+ */
 import express from "express";
 import * as controllers from "../controllers/index.js";
 import authRoutes from "./auth.routes.js";
