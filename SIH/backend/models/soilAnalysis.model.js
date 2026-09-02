@@ -1,3 +1,7 @@
+/**
+ * @module models/soilAnalysis.model
+ * @description Soil analysis report JSON storage and retrieval persistence model.
+ */
 import mongoose from "mongoose";
 
 const soilAnalysisSchema = new mongoose.Schema(
