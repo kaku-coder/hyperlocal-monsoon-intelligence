@@ -1,3 +1,7 @@
+/**
+ * @module components/common/RiskBadge
+ * @description Colored risk level badge indicator for climate advisory cards.
+ */
 import React from 'react';
 import { classifyProbability } from '../../utils/risk';
 
