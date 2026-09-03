@@ -1,3 +1,7 @@
+/**
+ * @module components/layout/Navbar
+ * @description Responsive top navigation header bar with location & language selector.
+ */
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getLocalFallbackBlocks } from '../../services/api';
