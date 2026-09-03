@@ -1,3 +1,7 @@
+/**
+ * @module components/layout/Sidebar
+ * @description Navigation drawer sidebar component for desktop and tablet screens.
+ */
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import {
