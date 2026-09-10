@@ -4,7 +4,7 @@
  */
 
 export const sendSmsOtp = async (phoneNumber, otp) => {
-  const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
+  const fast2smsApiKey = process.env.FAST2SMS_API_KEY ? process.env.FAST2SMS_API_KEY.trim() : null;
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioToken = process.env.TWILIO_AUTH_TOKEN;
   const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
@@ -12,7 +12,8 @@ export const sendSmsOtp = async (phoneNumber, otp) => {
   // Option 1: Fast2SMS (Indian SMS Provider)
   if (fast2smsApiKey) {
     try {
-      const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      // Primary Attempt: Fast2SMS OTP Route
+      let response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
         method: "POST",
         headers: {
           "authorization": fast2smsApiKey,
@@ -24,8 +25,30 @@ export const sendSmsOtp = async (phoneNumber, otp) => {
           numbers: phoneNumber
         })
       });
-      const data = await response.json();
-      console.log("📲 Fast2SMS Dispatch Result:", data);
+
+      let data = await response.json();
+      console.log("📲 Fast2SMS OTP Route Result:", data);
+
+      // If OTP route requires DLT template, Fallback to Quick SMS route ("q")
+      if (!data.return) {
+        response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+          method: "POST",
+          headers: {
+            "authorization": fast2smsApiKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            route: "q",
+            message: `Your MoES Monsoon Intel verification OTP is ${otp}. Valid for 10 minutes.`,
+            language: "english",
+            flash: 0,
+            numbers: phoneNumber
+          })
+        });
+        data = await response.json();
+        console.log("📲 Fast2SMS Quick Route Result:", data);
+      }
+
       return { success: true, provider: "Fast2SMS", details: data };
     } catch (err) {
       console.error("Fast2SMS Dispatch Error:", err.message);
