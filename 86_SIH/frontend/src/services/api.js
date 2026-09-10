@@ -48,12 +48,12 @@ export const registerUserApi = async (userData) => {
   }
 };
 
-export const loginUserApi = async (name, password) => {
+export const loginUserApi = async (identifier, password) => {
   try {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, password })
+      body: JSON.stringify({ phoneNumber: identifier, name: identifier, password })
     });
     return await res.json();
   } catch (err) {

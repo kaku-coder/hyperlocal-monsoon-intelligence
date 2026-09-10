@@ -60,13 +60,14 @@ export const AuthModal = ({ isOpen, onClose }) => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!phoneNumber || !password) {
-      setErrorMsg('Please enter your Phone Number and Password');
+    const loginId = phoneNumber || name;
+    if (!loginId || !password) {
+      setErrorMsg('Please enter your Mobile Number or Name and Password');
       return;
     }
 
     setLoading(true);
-    const res = await loginUserApi(phoneNumber, password);
+    const res = await loginUserApi(loginId, password);
     setLoading(false);
 
     if (res.status === 'success' && res.token) {
@@ -80,7 +81,7 @@ export const AuthModal = ({ isOpen, onClose }) => {
         onClose();
       }, 800);
     } else {
-      setErrorMsg(res.message || 'Invalid phone number or password. Try registering first.');
+      setErrorMsg(res.message || 'Invalid Mobile Number/Name or Password.');
     }
   };
 

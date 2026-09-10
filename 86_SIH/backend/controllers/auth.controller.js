@@ -312,23 +312,28 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// 5. Login User (Name + Password)
 export const loginUser = async (req, res) => {
   try {
-    const { name, password } = req.body;
+    const { phoneNumber, name, password } = req.body;
+    const loginIdentifier = phoneNumber || name;
 
-    if (!name || !password) {
+    if (!loginIdentifier || !password) {
       return res.status(400).json({
         status: "error",
-        message: "Please provide both name and password."
+        message: "Please provide your Mobile Number (or Name) and Password."
       });
     }
 
-    const user = await User.findOne({ name });
+    const user = await User.findOne({
+      $or: [
+        { phoneNumber: loginIdentifier },
+        { name: loginIdentifier }
+      ]
+    });
     if (!user) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid name or password."
+        message: "Invalid credentials. Please check your Mobile Number/Name or Password."
       });
     }
 
@@ -336,7 +341,7 @@ export const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid name or password."
+        message: "Invalid credentials. Please check your Mobile Number/Name or Password."
       });
     }
 

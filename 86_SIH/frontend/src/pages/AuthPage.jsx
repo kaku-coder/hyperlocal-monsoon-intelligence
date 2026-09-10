@@ -272,12 +272,12 @@ export const AuthPage = () => {
           {mode === 'login' && (
             <form onSubmit={handleNameLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Name</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Mobile Number or Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
+                  placeholder="e.g. 8093164058 or prakash"
                   autoFocus
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 />
