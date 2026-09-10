@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
+import { sendSmsOtp } from "../services/smsService.js";
+
 
 // Helper to generate JWT Token
 const generateToken = (id, phoneNumber, role) => {
@@ -52,16 +54,16 @@ export const sendOtp = async (req, res) => {
       otp: generatedOtp
     });
 
-    console.log(`=======================================================`);
-    console.log(`📱 SMS OTP Sent to +91 ${phoneNumber}: ${generatedOtp}`);
-    console.log(`=======================================================`);
+    // Send SMS via Provider (Fast2SMS / Twilio / Simulated)
+    const smsResult = await sendSmsOtp(phoneNumber, generatedOtp);
 
     res.json({
       status: "success",
       message: `OTP sent successfully to +91 ${phoneNumber}`,
-      // Returned for hackathon demo testing convenience
-      demo_otp: generatedOtp
+      demo_otp: generatedOtp,
+      provider: smsResult.provider
     });
+
   } catch (error) {
     console.error("Send OTP Error:", error);
     res.status(500).json({
