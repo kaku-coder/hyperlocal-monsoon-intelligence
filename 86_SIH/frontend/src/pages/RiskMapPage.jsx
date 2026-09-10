@@ -10,7 +10,7 @@ import {
 function MapRecenter({ center }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.flyTo(center, 12, { animate: true, duration: 1.2 });
+    if (center) map.flyTo(center, 11, { animate: true, duration: 1.2 });
   }, [center, map]);
   return null;
 }
@@ -44,7 +44,7 @@ function getWMO(code, lang = 'en') {
   return { emoji: entry.emoji, label: entry[lang] || entry.en };
 }
 
-// 30 Odisha Districts Coordinates Lookup Master Table
+// 30 Odisha Districts Coordinates Lookup Table
 const ODISHA_DISTRICT_COORDS = {
   'Angul': { lat: 20.8400, lon: 85.1000 },
   'Balasore': { lat: 21.4934, lon: 86.9135 },
@@ -83,24 +83,24 @@ const ODISHA_DISTRICT_COORDS = {
 
 const NEARBY_BLOCKS = [
   { name: 'Bhubaneswar', district: 'Khordha', lat: 20.2961, lon: 85.8245 },
-  { name: 'Balasore', district: 'Balasore', lat: 21.4934, lon: 86.9135 },
-  { name: 'Haladipada', district: 'Balasore', lat: 21.5600, lon: 86.9800 },
   { name: 'Cuttack', district: 'Cuttack', lat: 20.4625, lon: 85.8828 },
   { name: 'Puri', district: 'Puri', lat: 19.8135, lon: 85.8312 },
   { name: 'Rajkanika', district: 'Kendrapara', lat: 20.7300, lon: 86.6600 },
   { name: 'Jajpur', district: 'Jajpur', lat: 20.8500, lon: 86.3300 },
+  { name: 'Balasore', district: 'Balasore', lat: 21.4934, lon: 86.9135 },
   { name: 'Sambalpur', district: 'Sambalpur', lat: 21.4669, lon: 83.9812 },
   { name: 'Berhampur', district: 'Ganjam', lat: 19.3150, lon: 84.7941 },
   { name: 'Koraput', district: 'Koraput', lat: 18.8135, lon: 82.7123 },
   { name: 'Rourkela', district: 'Sundargarh', lat: 22.2604, lon: 84.8536 },
   { name: 'Angul', district: 'Angul', lat: 20.8400, lon: 85.1000 },
+  { name: 'Kalahandi', district: 'Kalahandi', lat: 19.9075, lon: 83.1659 }
 ];
 
 export const RiskMapPage = () => {
   const { selectedBlock, selectedDistrict, selectedPanchayat, farmerLanguage, user, changeLocation } = useApp();
   const lang = farmerLanguage || 'en';
 
-  const [pincode, setPincode] = useState(user?.pincode || '');
+  const [pincode, setPincode] = useState('');
   const [coords, setCoords] = useState(null);
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState(null);
@@ -115,7 +115,7 @@ export const RiskMapPage = () => {
     if (style === 'esri-satellite') {
       return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
     }
-    return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
   };
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
@@ -170,7 +170,7 @@ export const RiskMapPage = () => {
     fetchBlockWeathers();
   }, []);
 
-  // Fail-Safe Sync Function: Guarantees map centers on selected District/Block/Panchayat
+  // Sync function that accurately geocodes District/Block/Panchayat without returning hardcoded Bhubaneswar
   const syncMapLocation = useCallback(async (targetDistrict, targetBlock, targetPanchayat) => {
     const d = targetDistrict || selectedDistrict || 'Khordha';
     const b = targetBlock || selectedBlock || 'Bhubaneswar';
@@ -178,13 +178,11 @@ export const RiskMapPage = () => {
 
     setLoading(true);
     const displayName = p ? `${b} • ${p}` : b;
-    setStatus(`Syncing ${displayName}...`);
 
     let finalLat = null;
     let finalLon = null;
 
     try {
-      // 1. Try Nominatim Geocoding for Panchayat or Block
       const searchTerms = [
         p ? `${p}, ${d}, Odisha, India` : null,
         `${b}, ${d}, Odisha, India`,
@@ -205,7 +203,6 @@ export const RiskMapPage = () => {
         }
       }
 
-      // 2. District Coordinate Fallback (NEVER fall back to Bhubaneswar if user selected Balasore or another district!)
       if (!finalLat || !finalLon) {
         const districtLookup = ODISHA_DISTRICT_COORDS[d] || ODISHA_DISTRICT_COORDS[b] || ODISHA_DISTRICT_COORDS['Khordha'];
         finalLat = districtLookup.lat;
@@ -301,75 +298,51 @@ export const RiskMapPage = () => {
       {/* Top Floating Controls Bar */}
       <div className="absolute top-4 left-4 right-4 z-[500] flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         
-        {/* Left: Search Box */}
-        <form onSubmit={handleSearch} className="pointer-events-auto flex items-center gap-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 px-3 py-2 rounded-2xl shadow-2xl">
+        {/* Left: Search Box (Matching Reference Image) */}
+        <form onSubmit={handleSearch} className="pointer-events-auto flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 px-3 py-2 rounded-2xl shadow-2xl">
           <MapPin className="h-4 w-4 text-cyan-400" />
           <input
             type="text"
             value={pincode}
             onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder={user?.pincode ? `PIN: ${user.pincode}` : (lang === 'hi' ? '6 अंकों का पिनकोड' : 'Enter Pincode')}
+            placeholder="Enter Pincode (e.g. 754212)"
             maxLength={6}
-            className="w-40 sm:w-52 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
+            className="w-48 sm:w-60 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
           />
           <button
             type="submit"
             disabled={loading}
-            className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg disabled:opacity-50"
+            className="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg disabled:opacity-50"
           >
             {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-            <span>{lang === 'hi' ? 'खोजें' : lang === 'or' ? 'ସନ୍ଧାନ' : 'Search'}</span>
+            <span>Search</span>
           </button>
         </form>
 
-        {/* Right: Layer Switcher, Cloud Radar & Real-Time Socket Indicator */}
+        {/* Right: Map Style Buttons & Location Badge (Exact Match with Reference Image) */}
         <div className="pointer-events-auto flex flex-wrap items-center gap-2">
           
-          {/* Socket Live Sync Badge */}
-          <div className="bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <Zap className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-            <span>Realtime Socket Sync</span>
-          </div>
-
-          {/* Live Cloud Radar Toggle */}
-          <button
-            onClick={() => setShowClouds(!showClouds)}
-            className={`px-3 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer border shadow-2xl flex items-center gap-1.5 ${
-              showClouds
-                ? 'bg-gradient-to-r from-sky-600 to-blue-700 text-white border-sky-400 shadow-sky-900/50'
-                : 'bg-slate-900/90 text-slate-400 border-slate-700 hover:text-white'
-            }`}
-          >
-            <Cloud className="h-3.5 w-3.5 text-cyan-300" />
-            <span>☁️ {showClouds ? 'Clouds Radar ON' : 'Clouds Radar OFF'}</span>
-          </button>
-
-          {/* Map Layer Switcher */}
-          <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 p-1 rounded-2xl shadow-2xl flex items-center text-xs">
+          <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 p-1 rounded-2xl shadow-2xl flex items-center text-xs">
             <button
               onClick={() => setMapStyle('esri-satellite')}
-              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 mapStyle === 'esri-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              🌍 Satellite HD
+              <span>🌍 Satellite Hybrid</span>
             </button>
             <button
-              onClick={() => setMapStyle('osm-street')}
-              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                mapStyle === 'osm-street' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              onClick={() => setMapStyle('carto-dark')}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                mapStyle === 'carto-dark' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              🗺️ Street Map
+              <span>🗺️ Dark GIS</span>
             </button>
           </div>
 
           {coords && (
-            <div className="bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
               <LocateFixed className="h-4 w-4 text-cyan-400 animate-pulse" />
               <div>
                 <div className="text-xs font-black text-white">{coords.name}</div>
@@ -381,32 +354,31 @@ export const RiskMapPage = () => {
 
       </div>
 
-      {/* Main Fullscreen GIS Map */}
+      {/* Main Fullscreen GIS Leaflet Map */}
       <MapContainer
         center={coords ? [coords.lat, coords.lon] : [20.2961, 85.8245]}
-        zoom={coords ? 12 : 8}
+        zoom={coords ? 10 : 8}
         scrollWheelZoom={true}
         className="h-full w-full z-10"
       >
         <MapRecenter center={coords ? [coords.lat, coords.lon] : null} />
 
-        {/* Clean, Watermark-Free Tile Layer */}
         <TileLayer
           attribution='&copy; ESRI &copy; OpenStreetMap | MoES NCMRWF'
           url={getTileUrl(mapStyle)}
-          maxZoom={19}
+          maxZoom={17}
         />
 
         {/* Real-time Weather Cloud & Rain Radar Tile Overlay Layer */}
         {showClouds && radarTimestamp && (
           <TileLayer
             url={`https://tilecache.rainviewer.com/v2/radar/${radarTimestamp}/256/{z}/{x}/{y}/2/1_1.png`}
-            opacity={0.65}
+            opacity={0.6}
             zIndex={400}
           />
         )}
 
-        {/* Render Interactive Weather Pins for Surrounding Blocks */}
+        {/* Render Interactive Weather Pins for Surrounding Odisha Blocks */}
         {NEARBY_BLOCKS.map((block) => {
           const bw = blockWeathers[block.name];
           const bwmo = bw ? getWMO(bw.weather_code, lang) : { emoji: '🌤️' };
@@ -459,7 +431,7 @@ export const RiskMapPage = () => {
         )}
       </MapContainer>
 
-      {/* Floating Bottom Weather Forecast Widget Card */}
+      {/* Floating Bottom Weather Forecast Widget Card (Exact Match with Reference Image) */}
       {w && wmo && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] w-[95%] max-w-4xl bg-slate-900/92 backdrop-blur-2xl border border-slate-700/80 p-4 sm:p-5 rounded-3xl shadow-2xl space-y-4">
           
@@ -490,12 +462,12 @@ export const RiskMapPage = () => {
               </div>
             </div>
 
-            {/* Right: 7-Day Forecast Strip */}
+            {/* Right: 7-Day Forecast Strip (Exact Match with Reference Image) */}
             {f && (
               <div className="w-full md:w-auto flex-1 bg-slate-950/80 border border-slate-800 p-3 rounded-2xl">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 mb-2 flex items-center gap-1">
                   <Cloud className="h-3 w-3" />
-                  <span>{lang === 'hi' ? '7-दिवसीय मौसम पूर्वानुमान' : lang === 'or' ? '୭-ଦିନିଆ ପାଣିପାଗ ପୂର୍ବାନୁମାନ' : '7-Day Weather Outlook'}</span>
+                  <span>{lang === 'hi' ? '7-दिवसीय मौसम पूर्वानुमान' : lang === 'or' ? '୭-ଦିନିଆ ପାଣିପାଗ ପୂର୍ବାନୁମାନ' : '7-DAY WEATHER OUTLOOK'}</span>
                 </div>
                 
                 <div className="grid grid-cols-7 gap-1 text-center">
