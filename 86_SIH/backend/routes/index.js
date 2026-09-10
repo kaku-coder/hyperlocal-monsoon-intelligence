@@ -1,7 +1,12 @@
 import express from "express";
 import * as controllers from "../controllers/index.js";
+import authRoutes from "./auth.routes.js";
 
 const router = express.Router();
+
+// Authentication Routes
+router.use("/auth", authRoutes);
+
 
 // Locations
 router.get("/locations", controllers.getAllLocations);
