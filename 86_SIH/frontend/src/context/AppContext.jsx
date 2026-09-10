@@ -69,8 +69,35 @@ export const AppProvider = ({ children }) => {
           if (res.user.district) setSelectedDistrict(res.user.district);
           if (res.user.block) setSelectedBlock(res.user.block);
         } else {
-          // Token expired or invalid
           logoutUserSession();
+        }
+      }
+
+      // Auto-geocode pincode for map if no saved location
+      const savedLoc = localStorage.getItem('moes_map_location');
+      if (!savedLoc) {
+        const userData = JSON.parse(localStorage.getItem('moes_user_data') || '{}');
+        const pin = userData.pincode;
+        if (pin && pin.length === 6) {
+          try {
+            const nomRes = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(pin)}+India&format=json&limit=1`,
+              { headers: { 'Accept-Language': 'en' } }
+            );
+            if (nomRes.ok) {
+              const nomData = await nomRes.json();
+              if (nomData.length > 0) {
+                setMapLocation({
+                  lat: parseFloat(nomData[0].lat),
+                  lng: parseFloat(nomData[0].lon),
+                  pincode: pin,
+                  address: nomData[0].display_name || '',
+                  district: userData.district || '',
+                  block: userData.block || '',
+                });
+              }
+            }
+          } catch {}
         }
       }
     };

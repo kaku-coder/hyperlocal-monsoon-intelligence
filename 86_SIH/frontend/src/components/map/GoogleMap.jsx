@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { loadGoogleMaps } from '../../lib/google-maps';
 import { geocodePincode, geocodeFromCoords, validatePincode } from '../../lib/google-geocoding';
+import { useApp } from '../../context/AppContext';
 
 const DEFAULT_CENTER = { lat: 20.2961, lng: 85.8245 };
 const DEFAULT_ZOOM = 10;
 const GEOCODE_ZOOM = 15;
 
-export default function GoogleMap({ onLocationChange }) {
+export default function GoogleMap() {
+  const { mapLocation, setMapLocation, user } = useApp();
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
+  const initializedRef = useRef(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
@@ -18,6 +21,27 @@ export default function GoogleMap({ onLocationChange }) {
   const [searchError, setSearchError] = useState('');
   const [location, setLocation] = useState(null);
 
+  const placeMarker = useCallback((google, lat, lng, title) => {
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
+    }
+    const marker = new google.maps.Marker({
+      position: { lat, lng },
+      map: mapInstanceRef.current,
+      title: title || 'Location',
+      animation: google.maps.Animation.DROP,
+    });
+    markerRef.current = marker;
+  }, []);
+
+  const centerMap = useCallback((lat, lng, zoom) => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.panTo({ lat, lng });
+      mapInstanceRef.current.setZoom(zoom || GEOCODE_ZOOM);
+    }
+  }, []);
+
+  // Initialize map
   useEffect(() => {
     let cancelled = false;
 
@@ -26,9 +50,14 @@ export default function GoogleMap({ onLocationChange }) {
         const google = await loadGoogleMaps();
         if (cancelled) return;
 
+        const initialCenter = mapLocation?.lat && mapLocation?.lng
+          ? { lat: mapLocation.lat, lng: mapLocation.lng }
+          : DEFAULT_CENTER;
+        const initialZoom = mapLocation?.lat ? GEOCODE_ZOOM : DEFAULT_ZOOM;
+
         const map = new google.maps.Map(mapRef.current, {
-          center: DEFAULT_CENTER,
-          zoom: DEFAULT_ZOOM,
+          center: initialCenter,
+          zoom: initialZoom,
           mapTypeId: 'satellite',
           mapTypeControl: true,
           mapTypeControlOptions: {
@@ -48,6 +77,12 @@ export default function GoogleMap({ onLocationChange }) {
 
         mapInstanceRef.current = map;
         setMapLoaded(true);
+
+        // Place marker if we have saved location
+        if (mapLocation?.lat && mapLocation?.lng) {
+          placeMarker(google, mapLocation.lat, mapLocation.lng, `PIN: ${mapLocation.pincode || ''}`);
+          setLocation(mapLocation);
+        }
       } catch (err) {
         if (!cancelled) {
           setMapError(err.message || 'Failed to load Google Maps');
@@ -57,22 +92,20 @@ export default function GoogleMap({ onLocationChange }) {
 
     init();
     return () => { cancelled = true; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const placeMarker = useCallback((google, lat, lng, title) => {
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-    }
+  // When mapLocation changes from context (e.g. after login geocode), update map
+  useEffect(() => {
+    if (!mapLoaded || !mapLocation?.lat || !mapLocation?.lng) return;
+    if (initializedRef.current) return; // skip if we already handled initial location
+    initializedRef.current = true;
 
-    const marker = new google.maps.Marker({
-      position: { lat, lng },
-      map: mapInstanceRef.current,
-      title: title || 'Location',
-      animation: google.maps.Animation.DROP,
+    centerMap(mapLocation.lat, mapLocation.lng, GEOCODE_ZOOM);
+    loadGoogleMaps().then((google) => {
+      placeMarker(google, mapLocation.lat, mapLocation.lng, `PIN: ${mapLocation.pincode || ''}`);
     });
-
-    markerRef.current = marker;
-  }, []);
+    setLocation(mapLocation);
+  }, [mapLoaded, mapLocation, centerMap, placeMarker]);
 
   const handleSearch = useCallback(async (e) => {
     e.preventDefault();
@@ -91,7 +124,6 @@ export default function GoogleMap({ onLocationChange }) {
 
       mapInstanceRef.current.panTo({ lat: result.lat, lng: result.lng });
       mapInstanceRef.current.setZoom(GEOCODE_ZOOM);
-
       placeMarker(google, result.lat, result.lng, `PIN: ${result.postalCode}`);
 
       const loc = {
@@ -99,15 +131,16 @@ export default function GoogleMap({ onLocationChange }) {
         lng: result.lng,
         address: result.address,
         postalCode: result.postalCode,
+        pincode: result.postalCode,
       };
       setLocation(loc);
-      onLocationChange?.(loc);
+      setMapLocation(loc);
     } catch (err) {
       setSearchError(err.message || 'Search failed');
     } finally {
       setSearching(false);
     }
-  }, [pinInput, placeMarker, onLocationChange]);
+  }, [pinInput, placeMarker, setMapLocation]);
 
   const handleMyLocation = useCallback(() => {
     setSearchError('');
@@ -122,13 +155,11 @@ export default function GoogleMap({ onLocationChange }) {
         try {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-
           const loc = await geocodeFromCoords(lat, lng);
           const google = await loadGoogleMaps();
 
           mapInstanceRef.current.panTo({ lat, lng });
           mapInstanceRef.current.setZoom(GEOCODE_ZOOM);
-
           placeMarker(google, lat, lng, 'Your Location');
 
           const locationData = {
@@ -136,11 +167,12 @@ export default function GoogleMap({ onLocationChange }) {
             lng,
             address: loc.address,
             postalCode: loc.postalCode,
+            pincode: loc.postalCode,
           };
           setLocation(locationData);
-          onLocationChange?.(locationData);
+          setMapLocation(locationData);
         } catch (err) {
-          setSearchError(err.message || 'Failed to get address for your location');
+          setSearchError(err.message || 'Failed to get address');
         } finally {
           setSearching(false);
         }
@@ -149,21 +181,21 @@ export default function GoogleMap({ onLocationChange }) {
         setSearching(false);
         switch (err.code) {
           case err.PERMISSION_DENIED:
-            setSearchError('Location permission denied. You can search by PIN code instead.');
+            setSearchError('Location permission denied. Search by PIN instead.');
             break;
           case err.POSITION_UNAVAILABLE:
-            setSearchError('Location information is unavailable.');
+            setSearchError('Location unavailable.');
             break;
           case err.TIMEOUT:
             setSearchError('Location request timed out.');
             break;
           default:
-            setSearchError('An unknown error occurred getting your location.');
+            setSearchError('Could not get your location.');
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
-  }, [placeMarker, onLocationChange]);
+  }, [placeMarker, setMapLocation]);
 
   return (
     <div className="flex flex-col h-full">
@@ -175,8 +207,7 @@ export default function GoogleMap({ onLocationChange }) {
               type="text"
               value={pinInput}
               onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                setPinInput(val);
+                setPinInput(e.target.value.replace(/\D/g, '').slice(0, 6));
                 setSearchError('');
               }}
               placeholder="Enter 6-digit PIN"
@@ -216,7 +247,7 @@ export default function GoogleMap({ onLocationChange }) {
             <div className="text-red-400 text-sm font-bold">Failed to load Google Maps</div>
             <div className="text-slate-400 text-xs">{mapError}</div>
             <div className="text-slate-500 text-[10px]">
-              Check that VITE_GOOGLE_MAPS_API_KEY is set and the Maps JavaScript API is enabled.
+              Check VITE_GOOGLE_MAPS_API_KEY and ensure Maps JavaScript API + Geocoding API are enabled.
             </div>
           </div>
         </div>
@@ -225,7 +256,6 @@ export default function GoogleMap({ onLocationChange }) {
       {/* Map container */}
       <div className="flex-1 relative">
         <div ref={mapRef} className="absolute inset-0 w-full h-full" />
-
         {!mapLoaded && !mapError && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-950 z-10">
             <div className="text-center space-y-2">
@@ -241,19 +271,19 @@ export default function GoogleMap({ onLocationChange }) {
         <div className="px-3 py-2 bg-slate-900 border-t border-slate-800 text-[11px] font-mono text-slate-400 flex items-center gap-4 flex-wrap">
           <span>
             <span className="text-slate-500">lat:</span>{' '}
-            <span className="text-sky-300 font-bold">{location.lat.toFixed(6)}</span>
+            <span className="text-sky-300 font-bold">{typeof location.lat === 'number' ? location.lat.toFixed(6) : location.lat}</span>
           </span>
           <span>
             <span className="text-slate-500">lng:</span>{' '}
-            <span className="text-sky-300 font-bold">{location.lng.toFixed(6)}</span>
+            <span className="text-sky-300 font-bold">{typeof location.lng === 'number' ? location.lng.toFixed(6) : location.lng}</span>
           </span>
           <span>
             <span className="text-slate-500">PIN:</span>{' '}
-            <span className="text-amber-300 font-bold">{location.postalCode}</span>
+            <span className="text-amber-300 font-bold">{location.postalCode || location.pincode}</span>
           </span>
-          <span className="text-slate-500 truncate max-w-xs">
-            {location.address}
-          </span>
+          {location.address && (
+            <span className="text-slate-500 truncate max-w-xs">{location.address}</span>
+          )}
         </div>
       )}
     </div>

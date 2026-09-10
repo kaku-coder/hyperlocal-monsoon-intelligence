@@ -17,6 +17,7 @@ import { HistoricalPage } from './pages/HistoricalPage';
 import { ExplainabilityPage } from './pages/ExplainabilityPage';
 import { SystemStatusPage } from './pages/SystemStatusPage';
 import { AuthPage } from './pages/AuthPage';
+import GoogleMap from './components/map/GoogleMap';
 
 function AppContent() {
   const { activeTab } = useApp();
@@ -48,6 +49,8 @@ function AppContent() {
         return <SystemStatusPage />;
       case 'auth':
         return <AuthPage />;
+      case 'map':
+        return <GoogleMap />;
       default:
         return <CommandCenter />;
     }

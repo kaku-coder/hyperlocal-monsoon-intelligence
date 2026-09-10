@@ -235,7 +235,13 @@ export const AuthPage = () => {
         setSelectedDistrict(res.user.district);
         setSelectedBlock(res.user.block);
       }
-      setTimeout(() => setActiveTab('landing'), 600);
+      // Geocode pincode and save to mapLocation for Google Maps
+      const userPin = res.user?.pincode || pincode;
+      if (userPin) {
+        const mapLoc = await geocodePincodeForMap(userPin, res.user?.district || district, res.user?.block || block);
+        if (mapLoc) setMapLocation(mapLoc);
+      }
+      setTimeout(() => setActiveTab('map'), 600);
     } else {
       setErrorMsg(res.message || 'Registration failed. Phone may already be registered.');
     }

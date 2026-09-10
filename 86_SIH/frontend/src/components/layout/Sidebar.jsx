@@ -11,11 +11,13 @@ import {
   History,
   HelpCircle,
   Activity,
-  Home
+  Home,
+  Satellite
 } from 'lucide-react';
 
 const navigationItems = [
   { id: 'landing', label: 'Landing & Concept', icon: Home, badge: null },
+  { id: 'map', label: 'Satellite Map', icon: Satellite, badge: 'GPS' },
   { id: 'command-center', label: 'Command Center', icon: LayoutDashboard, badge: 'Live' },
   { id: 'risk-map', label: 'GIS Risk Map', icon: Map, badge: 'GIS' },
   { id: 'forecast', label: '7–30 Day Forecast', icon: CalendarDays, badge: null },
