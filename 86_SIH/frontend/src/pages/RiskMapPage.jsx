@@ -361,17 +361,61 @@ export const RiskMapPage = () => {
 
           {geoData?.features.map((feat) => {
             const isSelected = selectedFeature?.properties?.id === feat.properties.id;
+
+            // Compute weather logo based on active layer & conditions
+            const breakProb = feat.properties.break_prob || 0;
+            const heavyProb = feat.properties.heavy_rain_prob || 0;
+
+            let symbol = '🌧️'; // Rain default
+            if (activeLayer === 'heavy_rain' || heavyProb > 60) {
+              symbol = '🌧️';
+            } else if (activeLayer === 'break_risk' || breakProb > 60) {
+              symbol = '☀️';
+            } else if (activeLayer === 'rainfall_anomaly') {
+              symbol = '🌬️';
+            } else if (activeLayer === 'soil_moisture') {
+              symbol = '❄️';
+            } else if (activeLayer === 'onset_risk') {
+              symbol = '🌦️';
+            }
+
+            const color = feat.properties.riskColor || '#38bdf8';
+            const size = isSelected ? 34 : 26;
+            const fontSize = isSelected ? 17 : 13;
+
+            const iconHtml = `
+              <div style="
+                background: ${color};
+                border: 2px solid #ffffff;
+                border-radius: 9999px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: ${size}px;
+                height: ${size}px;
+                box-shadow: 0 0 12px ${color}, 0 2px 8px rgba(0,0,0,0.6);
+                font-size: ${fontSize}px;
+                cursor: pointer;
+                line-height: 1;
+                transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
+                transition: transform 0.2s ease;
+              ">
+                ${symbol}
+              </div>
+            `;
+
+            const customMarkerIcon = L.divIcon({
+              html: iconHtml,
+              className: 'custom-weather-marker-badge',
+              iconSize: [size, size],
+              iconAnchor: [size / 2, size / 2]
+            });
+
             return (
-              <CircleMarker
+              <Marker
                 key={feat.properties.id}
-                center={[feat.properties.lat, feat.properties.lon]}
-                radius={isSelected ? 8 : 5}
-                pathOptions={{
-                  fillColor: feat.properties.riskColor,
-                  fillOpacity: 1,
-                  color: '#ffffff',
-                  weight: isSelected ? 2.5 : 1
-                }}
+                position={[feat.properties.lat, feat.properties.lon]}
+                icon={customMarkerIcon}
                 eventHandlers={{
                   click: () => {
                     setSelectedFeature(feat);
@@ -391,7 +435,7 @@ export const RiskMapPage = () => {
                     </div>
                   </div>
                 </Popup>
-              </CircleMarker>
+              </Marker>
             );
           })}
 
