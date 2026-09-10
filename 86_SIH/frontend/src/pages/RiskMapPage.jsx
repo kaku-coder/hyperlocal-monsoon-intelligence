@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { useApp } from '../context/AppContext';
+import locationSocket from '../utils/socketService';
 import {
-  Search, MapPin, LocateFixed, Droplets, Wind, RefreshCw, Eye, Globe, Layers, Cloud
+  Search, MapPin, LocateFixed, RefreshCw, Cloud, Zap
 } from 'lucide-react';
 
 function MapRecenter({ center }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.flyTo(center, 11, { animate: true, duration: 1.5 });
+    if (center) map.flyTo(center, 12, { animate: true, duration: 1.2 });
   }, [center, map]);
   return null;
 }
@@ -45,6 +46,7 @@ function getWMO(code, lang = 'en') {
 
 const NEARBY_BLOCKS = [
   { name: 'Bhubaneswar', district: 'Khordha', lat: 20.2961, lon: 85.8245 },
+  { name: 'Mencheswar', district: 'Khordha', lat: 20.3150, lon: 85.8450 },
   { name: 'Cuttack', district: 'Cuttack', lat: 20.4625, lon: 85.8828 },
   { name: 'Puri', district: 'Puri', lat: 19.8135, lon: 85.8312 },
   { name: 'Rajkanika', district: 'Kendrapara', lat: 20.7300, lon: 86.6600 },
@@ -58,7 +60,7 @@ const NEARBY_BLOCKS = [
 ];
 
 export const RiskMapPage = () => {
-  const { selectedBlock, selectedDistrict, farmerLanguage, user, changeLocation } = useApp();
+  const { selectedBlock, selectedDistrict, selectedPanchayat, farmerLanguage, user, changeLocation } = useApp();
   const lang = farmerLanguage || 'en';
 
   const [pincode, setPincode] = useState(user?.pincode || '');
@@ -68,18 +70,9 @@ export const RiskMapPage = () => {
   const [blockWeathers, setBlockWeathers] = useState({});
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mapStyle, setMapStyle] = useState('esri-satellite');
   const [showClouds, setShowClouds] = useState(true);
   const [radarTimestamp, setRadarTimestamp] = useState(null);
-
-  const maptilerKey = import.meta.env.VITE_MAPTILER_API_KEY || '4ymFs6LvsUF6t0HAQ95O';
-
-  const getTileUrl = (style) => {
-    if (style === 'esri-satellite') return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-    if (style === 'maptiler-satellite') return `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${maptilerKey}`;
-    if (style === 'maptiler-dark') return `https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}.png?key=${maptilerKey}`;
-    return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-  };
+  const [socketConnected, setSocketConnected] = useState(true);
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
   useEffect(() => {
@@ -132,6 +125,62 @@ export const RiskMapPage = () => {
     };
     fetchBlockWeathers();
   }, []);
+
+  // Primary function to geocode and update location immediately on socket/navbar signal
+  const syncMapLocation = useCallback(async (targetDistrict, targetBlock, targetPanchayat) => {
+    const d = targetDistrict || selectedDistrict || 'Khordha';
+    const b = targetBlock || selectedBlock || 'Bhubaneswar';
+    const p = targetPanchayat || selectedPanchayat || '';
+
+    setLoading(true);
+    setStatus(`Syncing ${b} ${p ? `(${p})` : ''}...`);
+
+    try {
+      // 1. Try Geocoding exact Panchayat + Block + District
+      let query = p ? `${p}, ${b}, ${d}, Odisha, India` : `${b}, ${d}, Odisha, India`;
+      let res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      let data = await res.json();
+
+      // 2. Fallback to Block + District if Panchayat search yields no results
+      if (!data || !data.length) {
+        query = `${b}, ${d}, Odisha, India`;
+        res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+        data = await res.json();
+      }
+
+      if (data && data.length) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        const displayName = p ? `${b} • ${p}` : b;
+        
+        setCoords({ lat, lon, name: displayName, country: d });
+        await fetchWeather(lat, lon);
+        setStatus(`📍 ${displayName}, ${d}`);
+      } else {
+        // Fallback default
+        setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
+        await fetchWeather(20.2961, 85.8245);
+      }
+    } catch (err) {
+      console.warn('Location sync failed:', err);
+    }
+    setLoading(false);
+  }, [selectedDistrict, selectedBlock, selectedPanchayat, fetchWeather]);
+
+  // Subscribe to real-time socket / event bus for IMMEDIATE map refresh when Navbar location changes
+  useEffect(() => {
+    const unsubscribe = locationSocket.subscribe((detail) => {
+      setSocketConnected(true);
+      syncMapLocation(detail.district, detail.block, detail.panchayat);
+    });
+
+    return () => unsubscribe();
+  }, [syncMapLocation]);
+
+  // Sync map location on initial mount or when Context values change
+  useEffect(() => {
+    syncMapLocation(selectedDistrict, selectedBlock, selectedPanchayat);
+  }, [selectedDistrict, selectedBlock, selectedPanchayat, syncMapLocation]);
 
   const handleSelectBlockMarker = async (block) => {
     setLoading(true);
@@ -186,40 +235,6 @@ export const RiskMapPage = () => {
     setLoading(false);
   };
 
-  // Auto-sync with logged in user location / selected navbar block so user never has to re-type pincode!
-  useEffect(() => {
-    const activeBlock = selectedBlock || user?.block || 'Bhubaneswar';
-    const activeDistrict = selectedDistrict || user?.district || 'Khordha';
-
-    if (user?.pincode && !pincode) {
-      setPincode(user.pincode);
-    }
-
-    const defaultSearch = async () => {
-      setLoading(true);
-      try {
-        const query = user?.pincode ? `${user.pincode}+India` : `${activeBlock}+${activeDistrict}+Odisha+India`;
-        const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
-        const nomData = await nomRes.json();
-        if (nomData.length) {
-          const lat = parseFloat(nomData[0].lat);
-          const lon = parseFloat(nomData[0].lon);
-          setCoords({ lat, lon, name: activeBlock, country: activeDistrict });
-          await fetchWeather(lat, lon);
-          setStatus(`📍 ${activeBlock}, ${activeDistrict}`);
-        } else {
-          setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
-          await fetchWeather(20.2961, 85.8245);
-        }
-      } catch (err) {
-        setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
-        await fetchWeather(20.2961, 85.8245);
-      }
-      setLoading(false);
-    };
-    defaultSearch();
-  }, [selectedBlock, selectedDistrict, user?.pincode, user?.block, user?.district]);
-
   const w = weather;
   const f = forecast;
   const wmo = w ? getWMO(w.weather_code, lang) : null;
@@ -231,15 +246,15 @@ export const RiskMapPage = () => {
       <div className="absolute top-4 left-4 right-4 z-[500] flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         
         {/* Left: Search Box */}
-        <form onSubmit={handleSearch} className="pointer-events-auto flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 px-3 py-2 rounded-2xl shadow-2xl">
+        <form onSubmit={handleSearch} className="pointer-events-auto flex items-center gap-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 px-3 py-2 rounded-2xl shadow-2xl">
           <MapPin className="h-4 w-4 text-cyan-400" />
           <input
             type="text"
             value={pincode}
             onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder={user?.pincode ? `User PIN: ${user.pincode}` : (lang === 'hi' ? '6 अंकों का पिनकोड' : 'Enter Pincode')}
+            placeholder={user?.pincode ? `PIN: ${user.pincode}` : (lang === 'hi' ? '6 अंकों का पिनकोड' : 'Enter Pincode')}
             maxLength={6}
-            className="w-44 sm:w-56 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
+            className="w-40 sm:w-52 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
           />
           <button
             type="submit"
@@ -251,9 +266,19 @@ export const RiskMapPage = () => {
           </button>
         </form>
 
-        {/* Right: Layer Switcher, Cloud Radar & Active Location Badge */}
+        {/* Right: Live Cloud Radar & Real-Time Socket Indicator */}
         <div className="pointer-events-auto flex flex-wrap items-center gap-2">
           
+          {/* Socket Live Sync Badge */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <Zap className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+            <span>Realtime Socket Sync</span>
+          </div>
+
           {/* Live Cloud Radar Toggle */}
           <button
             onClick={() => setShowClouds(!showClouds)}
@@ -267,36 +292,8 @@ export const RiskMapPage = () => {
             <span>☁️ {showClouds ? 'Clouds Radar ON' : 'Clouds Radar OFF'}</span>
           </button>
 
-          {/* Map Layer Style Switcher */}
-          <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 p-1 rounded-2xl shadow-2xl flex items-center text-xs">
-            <button
-              onClick={() => setMapStyle('esri-satellite')}
-              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                mapStyle === 'esri-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              🌍 ESRI Satellite HD
-            </button>
-            <button
-              onClick={() => setMapStyle('maptiler-satellite')}
-              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                mapStyle === 'maptiler-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              🛰️ MapTiler Hybrid
-            </button>
-            <button
-              onClick={() => setMapStyle('maptiler-dark')}
-              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                mapStyle === 'maptiler-dark' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              🗺️ Dark GIS
-            </button>
-          </div>
-
           {coords && (
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
+            <div className="bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
               <LocateFixed className="h-4 w-4 text-cyan-400 animate-pulse" />
               <div>
                 <div className="text-xs font-black text-white">{coords.name}</div>
@@ -308,18 +305,19 @@ export const RiskMapPage = () => {
 
       </div>
 
-      {/* Main Fullscreen Leaflet Map */}
+      {/* Main Fullscreen GIS Map */}
       <MapContainer
-        center={coords ? [coords.lat, coords.lon] : [20.712, 86.2]}
-        zoom={coords ? 11 : 8}
+        center={coords ? [coords.lat, coords.lon] : [20.2961, 85.8245]}
+        zoom={coords ? 12 : 8}
         scrollWheelZoom={true}
-        className="h-full w-full"
+        className="h-full w-full z-10"
       >
         <MapRecenter center={coords ? [coords.lat, coords.lon] : null} />
 
+        {/* Clean, Fast & High Contrast Vector Tile Layer */}
         <TileLayer
-          attribution='&copy; ESRI &copy; MapTiler &copy; OSM | MoES NCMRWF'
-          url={getTileUrl(mapStyle)}
+          attribution='&copy; CartoDB &copy; OpenStreetMap | MoES NCMRWF'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
         {/* Real-time Weather Cloud & Rain Radar Tile Overlay Layer */}
@@ -336,7 +334,7 @@ export const RiskMapPage = () => {
           const bw = blockWeathers[block.name];
           const bwmo = bw ? getWMO(bw.weather_code, lang) : { emoji: '🌤️' };
           const tempDisplay = bw ? `${Math.round(bw.temperature_2m)}°` : '--';
-          const isSelected = coords?.name === block.name;
+          const isSelected = coords?.name?.includes(block.name);
 
           return (
             <Marker
@@ -363,8 +361,8 @@ export const RiskMapPage = () => {
           );
         })}
 
-        {/* Custom Pincode Search Location Marker if outside predefined blocks */}
-        {coords && !NEARBY_BLOCKS.some(b => b.name === coords.name) && (
+        {/* Selected Location Target Pin Marker */}
+        {coords && (
           <Marker
             position={[coords.lat, coords.lon]}
             icon={L.divIcon({
@@ -377,14 +375,14 @@ export const RiskMapPage = () => {
                 <span style="font-family:system-ui;font-size:12px;font-weight:900;color:white;margin-left:4px;">${w ? `${Math.round(w.temperature_2m)}°` : ''}</span>
               </div>`,
               className: 'custom-location-marker',
-              iconSize: [110, 36],
-              iconAnchor: [55, 36]
+              iconSize: [120, 36],
+              iconAnchor: [60, 36]
             })}
           />
         )}
       </MapContainer>
 
-      {/* Floating Bottom Weather Forecast Widget Card (Reference Image Styling) */}
+      {/* Floating Bottom Weather Forecast Widget Card */}
       {w && wmo && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] w-[95%] max-w-4xl bg-slate-900/92 backdrop-blur-2xl border border-slate-700/80 p-4 sm:p-5 rounded-3xl shadow-2xl space-y-4">
           
@@ -415,7 +413,7 @@ export const RiskMapPage = () => {
               </div>
             </div>
 
-            {/* Right: 7-Day Forecast Strip (Matching Reference Image Layout) */}
+            {/* Right: 7-Day Forecast Strip */}
             {f && (
               <div className="w-full md:w-auto flex-1 bg-slate-950/80 border border-slate-800 p-3 rounded-2xl">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 mb-2 flex items-center gap-1">
@@ -459,7 +457,7 @@ export const RiskMapPage = () => {
         <div className="absolute inset-0 z-[600] bg-slate-950/70 backdrop-blur-md flex items-center justify-center pointer-events-none">
           <div className="flex items-center gap-3 bg-slate-900/95 px-6 py-4 rounded-2xl border border-slate-700 shadow-2xl">
             <RefreshCw className="h-6 w-6 text-cyan-400 animate-spin" />
-            <span className="text-xs font-black text-white">{lang === 'hi' ? 'मौसम लोड हो रहा है...' : lang === 'or' ? 'ପାଣିପାଗ ଲୋଡ୍ ହେଉଛି...' : 'Fetching block weather...'}</span>
+            <span className="text-xs font-black text-white">{lang === 'hi' ? 'मौसम लोड हो रहा है...' : lang === 'or' ? 'ପାଣିପାଗ ଲୋଡ୍ ହେଉଛି...' : 'Syncing GIS Risk Map...'}</span>
           </div>
         </div>
       )}

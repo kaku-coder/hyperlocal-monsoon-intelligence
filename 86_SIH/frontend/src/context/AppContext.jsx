@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { fetchDistricts, fetchBlocks, fetchForecast, fetchMeApi, logoutUserApi } from '../services/api';
 
+import locationSocket from '../utils/socketService';
+
 const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
@@ -31,8 +33,16 @@ export const AppProvider = ({ children }) => {
   const [selectedBlock, setSelectedBlock] = useState(() => {
     return localStorage.getItem('moes_selected_block') || savedUser?.block || 'Bhubaneswar';
   });
-  const [selectedPanchayat, setSelectedPanchayat] = useState('Dangarpatna');
+  const [selectedPanchayat, setSelectedPanchayatState] = useState(() => {
+    return localStorage.getItem('moes_selected_panchayat') || 'Dangarpatna';
+  });
   const [selectedLocationId, setSelectedLocationId] = useState('od-khordha-bhubaneswar');
+
+  const setSelectedPanchayat = (p) => {
+    setSelectedPanchayatState(p);
+    localStorage.setItem('moes_selected_panchayat', p);
+    locationSocket.changeLocation({ district: selectedDistrict, block: selectedBlock, panchayat: p });
+  };
 
   // Forecast Horizon (7, 14, 21, 30 days)
   const [forecastHorizon, setForecastHorizon] = useState(7);
@@ -113,6 +123,7 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('moes_user_data');
     localStorage.removeItem('moes_selected_district');
     localStorage.removeItem('moes_selected_block');
+    localStorage.removeItem('moes_selected_panchayat');
     await logoutUserApi();
   };
 
@@ -150,6 +161,10 @@ export const AppProvider = ({ children }) => {
 
   // Handler to select a block cleanly
   const changeLocation = (district, block, locId, panchayat) => {
+    const d = district || selectedDistrict;
+    const b = block || selectedBlock;
+    const p = panchayat || selectedPanchayat;
+
     if (district) {
       setSelectedDistrict(district);
       localStorage.setItem('moes_selected_district', district);
@@ -159,7 +174,12 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('moes_selected_block', block);
     }
     if (locId) setSelectedLocationId(locId);
-    if (panchayat) setSelectedPanchayat(panchayat);
+    if (panchayat) {
+      setSelectedPanchayatState(panchayat);
+      localStorage.setItem('moes_selected_panchayat', panchayat);
+    }
+
+    locationSocket.changeLocation({ district: d, block: b, panchayat: p });
   };
 
   const toggleTheme = () => {
