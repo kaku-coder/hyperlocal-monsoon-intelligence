@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 const firebaseConfig = {
@@ -14,6 +15,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Initialize Firebase Analytics
+export let analytics = null;
+if (typeof window !== "undefined") {
+  isSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app);
+    }
+  });
+}
 
 export { RecaptchaVerifier, signInWithPhoneNumber };
 export default app;
