@@ -12,7 +12,7 @@ export const sendSmsOtp = async (phoneNumber, otp) => {
   // Option 1: Fast2SMS (Indian SMS Provider)
   if (fast2smsApiKey) {
     try {
-      // Primary Attempt: Fast2SMS OTP Route
+      // Primary Attempt: Fast2SMS OTP Route (POST)
       let response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
         method: "POST",
         headers: {
@@ -27,9 +27,9 @@ export const sendSmsOtp = async (phoneNumber, otp) => {
       });
 
       let data = await response.json();
-      console.log("📲 Fast2SMS OTP Route Result:", data);
+      console.log("📲 Fast2SMS OTP POST Result:", data);
 
-      // If OTP route requires DLT template, Fallback to Quick SMS route ("q")
+      // Attempt 2: Fast2SMS Quick Route (POST)
       if (!data.return) {
         response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
           method: "POST",
@@ -47,6 +47,14 @@ export const sendSmsOtp = async (phoneNumber, otp) => {
         });
         data = await response.json();
         console.log("📲 Fast2SMS Quick Route Result:", data);
+      }
+
+      // Attempt 3: Fast2SMS GET Request URL Method (Exact dashboard format)
+      if (!data.return) {
+        const getUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(fast2smsApiKey)}&route=otp&variables_values=${encodeURIComponent(otp)}&numbers=${encodeURIComponent(phoneNumber)}`;
+        response = await fetch(getUrl);
+        data = await response.json();
+        console.log("📲 Fast2SMS GET Route Result:", data);
       }
 
       return { success: true, provider: "Fast2SMS", details: data };
