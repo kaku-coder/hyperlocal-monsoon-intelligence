@@ -1,19 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap, Marker, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Popup, useMap, Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { useApp } from '../context/AppContext';
 import { fetchGeoJSON } from '../services/api';
 import {
   Layers, AlertTriangle, Droplets, SunMedium, CloudRain,
   ArrowRight, Filter, Wind, Thermometer, Cloud,
-  BarChart3, Activity, Globe, ChevronDown, RefreshCw, Eye
+  BarChart3, Activity, Globe, ChevronDown, RefreshCw, Eye,
+  Search, MapPin, Compass
 } from 'lucide-react';
 
 function MapRecenter({ center }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.setView(center, 9, { animate: true });
+    if (center) map.flyTo(center, 10.5, { animate: true, duration: 1.2 });
   }, [center, map]);
+  return null;
+}
+
+function ZoomTracker({ onZoom }) {
+  const map = useMap();
+  useEffect(() => {
+    const handleZoom = () => onZoom(map.getZoom());
+    map.on('zoomend', handleZoom);
+    onZoom(map.getZoom());
+    return () => map.off('zoomend', handleZoom);
+  }, [map, onZoom]);
   return null;
 }
 
@@ -152,7 +164,18 @@ function getCloudLabel(props, lang) {
 }
 
 export const RiskMapPage = () => {
-  const { selectedDistrict, selectedBlock, changeLocation, setActiveTab, farmerLanguage } = useApp();
+  const { 
+    selectedDistrict, 
+    setSelectedDistrict, 
+    selectedBlock, 
+    setSelectedBlock, 
+    districts, 
+    blocks, 
+    changeLocation, 
+    setActiveTab, 
+    farmerLanguage, 
+    user 
+  } = useApp();
 
   const t = useMemo(() => {
     const lang = farmerLanguage || 'en';
@@ -186,10 +209,46 @@ export const RiskMapPage = () => {
 
   const [activeLayer, setActiveLayer] = useState('break_risk');
   const [mapStyle, setMapStyle] = useState('maptiler-dark');
+  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeStatus, setPincodeStatus] = useState('');
   const [geoData, setGeoData] = useState(null);
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [loading, setLoading] = useState(true);
   const [legendOpen, setLegendOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(8);
+
+  const handlePincodeSearch = async (e) => {
+    e.preventDefault();
+    if (pincodeInput.length !== 6) {
+      setPincodeStatus('Enter 6-digit pincode');
+      return;
+    }
+    setPincodeStatus('Searching Pincode...');
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pincodeInput}`);
+      const data = await res.json();
+      if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length) {
+        const po = data[0].PostOffice[0];
+        const distName = po.District;
+        const blockName = po.Block || po.Name;
+
+        if (geoData?.features) {
+          const match = geoData.features.find(
+            f => f.properties.district.toLowerCase() === distName.toLowerCase() ||
+                 f.properties.block.toLowerCase().includes(blockName.toLowerCase())
+          ) || geoData.features.find(f => f.properties.district.toLowerCase() === distName.toLowerCase()) || geoData.features[0];
+
+          setSelectedFeature(match);
+          changeLocation(match.properties.district, match.properties.block, match.properties.id, match.properties.panchayats?.[0]);
+          setPincodeStatus(`📍 ${match.properties.block} (${match.properties.district})`);
+        }
+      } else {
+        setPincodeStatus('Pincode not found. Try 754212 / 755003');
+      }
+    } catch (err) {
+      setPincodeStatus('Lookup failed. Try selecting district below');
+    }
+  };
 
   const maptilerKey = import.meta.env.VITE_MAPTILER_API_KEY || '4ymFs6LvsUF6t0HAQ95O';
 
@@ -265,6 +324,70 @@ export const RiskMapPage = () => {
             <h1 className="text-sm font-black tracking-tight text-white">{t.title}</h1>
             <p className="text-[10px] text-slate-400">{t.subtitle}</p>
           </div>
+        </div>
+
+        {/* Block Pincode & District Quick Navigation */}
+        <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-3 space-y-2 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-cyan-400" /> Focus Block by Pincode
+            </span>
+            <span className="text-[9px] text-slate-500 font-mono">Odisha</span>
+          </div>
+
+          <form onSubmit={handlePincodeSearch} className="flex gap-1.5">
+            <input
+              type="text"
+              value={pincodeInput}
+              onChange={(e) => setPincodeInput(e.target.value)}
+              placeholder="Enter Pincode (e.g. 754212)"
+              maxLength={6}
+              className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer"
+            >
+              <Search className="h-3 w-3" />
+              <span>Go</span>
+            </button>
+          </form>
+
+          {/* Quick Select District & Block */}
+          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+            <div>
+              <label className="text-[9px] text-slate-500 font-bold uppercase">District</label>
+              <select
+                value={selectedDistrict}
+                onChange={(e) => setSelectedDistrict(e.target.value)}
+                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] font-bold text-amber-300 focus:outline-none cursor-pointer mt-0.5"
+              >
+                {districts.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[9px] text-slate-500 font-bold uppercase">Block</label>
+              <select
+                value={selectedBlock}
+                onChange={(e) => {
+                  const b = blocks.find(blk => blk.block === e.target.value);
+                  if (b) changeLocation(selectedDistrict, b.block, b.id, b.panchayats?.[0]);
+                }}
+                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] font-bold text-sky-300 focus:outline-none cursor-pointer mt-0.5"
+              >
+                {blocks.map(b => (
+                  <option key={b.id || b.block} value={b.block}>{b.block}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {pincodeStatus && (
+            <div className="text-[10px] font-mono text-emerald-400 pt-0.5">{pincodeStatus}</div>
+          )}
         </div>
 
         {/* Layer Selector */}
@@ -442,9 +565,9 @@ export const RiskMapPage = () => {
           zoom={8}
           scrollWheelZoom={true}
           className="h-full w-full"
-          zoomControl={false}
         >
           <MapRecenter center={mapCenter} />
+          <ZoomTracker onZoom={setZoomLevel} />
 
           <TileLayer
             key={mapStyle}
@@ -461,14 +584,17 @@ export const RiskMapPage = () => {
             />
           )}
 
-          {/* Block labels on all blocks */}
+          {/* Block labels on all blocks - fade out when zoomed in */}
           {geoData?.features.map((feat) => {
             const isSel = selectedFeature?.properties?.id === feat.properties.id;
+            const labelOpacity = zoomLevel <= 9 ? 1 : zoomLevel === 10 ? 0.5 : zoomLevel === 11 ? 0.2 : 0;
+            if (labelOpacity <= 0 && !isSel) return null;
             return (
               <Marker
                 key={`label-${feat.properties.id}`}
                 position={[feat.properties.lat, feat.properties.lon]}
                 icon={createBlockLabel(feat.properties.block, isSel)}
+                opacity={isSel ? 1 : labelOpacity}
                 eventHandlers={{
                   click: () => {
                     setSelectedFeature(feat);
@@ -479,11 +605,12 @@ export const RiskMapPage = () => {
             );
           })}
 
-          {/* Cloud icon ONLY at selected block */}
-          {sf && (
+          {/* Cloud icon ONLY at selected block - fades on zoom */}
+          {sf && zoomLevel < 12 && (
             <Marker
               position={[sf.lat, sf.lon]}
               icon={createLocationCloudIcon(getCloudEmoji(sf), true, sf.block)}
+              opacity={zoomLevel <= 9 ? 1 : zoomLevel === 10 ? 0.6 : 0.3}
               eventHandlers={{
                 click: () => {
                   if (selectedFeature) {
@@ -508,11 +635,12 @@ export const RiskMapPage = () => {
             </Marker>
           )}
 
-          {/* Wind arrow ONLY at selected block */}
-          {sf && (
+          {/* Wind arrow ONLY at selected block - fades on zoom */}
+          {sf && zoomLevel < 11 && (
             <Marker
               position={[sf.lat + 0.02, sf.lon + 0.025]}
               icon={createWindArrow(210, 18)}
+              opacity={zoomLevel <= 9 ? 0.8 : 0.3}
             >
               <Tooltip direction="top" offset={[0, -12]} className="weather-tooltip">
                 <span style={{ fontFamily: 'monospace', fontSize: '10px', fontWeight: 700, color: '#38bdf8' }}>
