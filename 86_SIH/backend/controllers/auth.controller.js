@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+import Otp from "../models/otp.model.js";
 
 // Helper to generate JWT Token
 const generateToken = (id, phoneNumber, role) => {
@@ -19,7 +20,141 @@ const cookieOptions = {
   maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
 };
 
-// 1. Register User
+// 1. Send OTP to Mobile Number
+export const sendOtp = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({
+        status: "error",
+        message: "Please provide a phone number."
+      });
+    }
+
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format. Must be a 10-digit Indian mobile number."
+      });
+    }
+
+    // Generate 6-digit numeric OTP
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Delete any old existing OTP for this number
+    await Otp.deleteMany({ phoneNumber });
+
+    // Save new OTP in MongoDB
+    await Otp.create({
+      phoneNumber,
+      otp: generatedOtp
+    });
+
+    console.log(`=======================================================`);
+    console.log(`📱 SMS OTP Sent to +91 ${phoneNumber}: ${generatedOtp}`);
+    console.log(`=======================================================`);
+
+    res.json({
+      status: "success",
+      message: `OTP sent successfully to +91 ${phoneNumber}`,
+      // Returned for hackathon demo testing convenience
+      demo_otp: generatedOtp
+    });
+  } catch (error) {
+    console.error("Send OTP Error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message || "Failed to send OTP."
+    });
+  }
+};
+
+// 2. Verify OTP & Register/Login User
+export const verifyOtp = async (req, res) => {
+  try {
+    const {
+      phoneNumber,
+      otp,
+      name = "Farmer",
+      pincode = "754212",
+      district = "Kendrapara",
+      block = "Rajkanika",
+      panchayat = "Dangarpatna",
+      role = "FARMER"
+    } = req.body;
+
+    if (!phoneNumber || !otp) {
+      return res.status(400).json({
+        status: "error",
+        message: "Please provide both phone number and OTP."
+      });
+    }
+
+    // Check OTP in MongoDB
+    const otpRecord = await Otp.findOne({ phoneNumber, otp });
+    if (!otpRecord) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired OTP. Please request a new OTP."
+      });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ phoneNumber });
+
+    if (!user) {
+      // Create new user if not exists
+      const defaultPassword = await bcrypt.hash(`OTP_Pass_${Date.now()}`, 10);
+      user = await User.create({
+        name,
+        phoneNumber,
+        password: defaultPassword,
+        pincode,
+        district,
+        block,
+        panchayat,
+        role
+      });
+    }
+
+    // Delete used OTP
+    await Otp.deleteMany({ phoneNumber });
+
+    // Generate Token
+    const token = generateToken(user._id, user.phoneNumber, user.role);
+
+    // Set Cookie
+    res.cookie("token", token, cookieOptions);
+
+    res.json({
+      status: "success",
+      message: "Phone number verified & logged in successfully!",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+        pincode: user.pincode,
+        district: user.district,
+        block: user.block,
+        panchayat: user.panchayat,
+        role: user.role,
+        language: user.language,
+        primaryCrop: user.primaryCrop
+      }
+    });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message || "OTP verification failed."
+    });
+  }
+};
+
+// 3. Register User (Password-Based)
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -35,7 +170,6 @@ export const registerUser = async (req, res) => {
       primaryCrop = "rice"
     } = req.body;
 
-    // Validation
     if (!name || !phoneNumber || !password || !pincode) {
       return res.status(400).json({
         status: "error",
@@ -43,7 +177,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Phone Number Regex (10 digits Indian mobile)
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(phoneNumber)) {
       return res.status(400).json({
@@ -52,7 +185,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Pincode Regex (6 digits)
     const pinRegex = /^\d{6}$/;
     if (!pinRegex.test(pincode)) {
       return res.status(400).json({
@@ -61,7 +193,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Check existing user
     const existingUser = await User.findOne({ phoneNumber });
     if (existingUser) {
       return res.status(400).json({
@@ -70,11 +201,9 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Hash Password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create User
     const user = await User.create({
       name,
       phoneNumber,
@@ -88,10 +217,7 @@ export const registerUser = async (req, res) => {
       primaryCrop
     });
 
-    // Generate Token
     const token = generateToken(user._id, user.phoneNumber, user.role);
-
-    // Set HTTP-Only Cookie
     res.cookie("token", token, cookieOptions);
 
     res.status(201).json({
@@ -120,7 +246,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// 2. Login User
+// 4. Login User (Password-Based)
 export const loginUser = async (req, res) => {
   try {
     const { phoneNumber, password } = req.body;
@@ -132,7 +258,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Find User
     const user = await User.findOne({ phoneNumber });
     if (!user) {
       return res.status(401).json({
@@ -141,7 +266,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Compare Password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
@@ -150,10 +274,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Generate Token
     const token = generateToken(user._id, user.phoneNumber, user.role);
-
-    // Set HTTP-Only Cookie
     res.cookie("token", token, cookieOptions);
 
     res.json({
@@ -182,7 +303,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// 3. Logout User
+// 5. Logout User
 export const logoutUser = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
@@ -196,7 +317,7 @@ export const logoutUser = async (req, res) => {
   });
 };
 
-// 4. Get Authenticated Profile
+// 6. Get Profile
 export const getMe = async (req, res) => {
   try {
     res.json({
@@ -211,7 +332,7 @@ export const getMe = async (req, res) => {
   }
 };
 
-// 5. Update Profile
+// 7. Update Profile
 export const updateProfile = async (req, res) => {
   try {
     const { name, pincode, district, block, panchayat, language, primaryCrop } = req.body;
