@@ -304,7 +304,7 @@ export const FarmerModePage = () => {
           </a>
 
           <p className="text-[10px] text-center text-slate-500 leading-tight">
-            {t.disclaimer || "Official MoES/IMD Data Stream"} • Prototype Decision Support
+            {t.disclaimer || "Official MoES/NCMRWF Weather Data Stream"}
           </p>
         </div>
 
