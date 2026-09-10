@@ -11,6 +11,14 @@ const generateToken = (id, phoneNumber, role) => {
   );
 };
 
+// Cookie Options for HTTP-Only Auth Cookie
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+};
+
 // 1. Register User
 export const registerUser = async (req, res) => {
   try {
@@ -83,6 +91,9 @@ export const registerUser = async (req, res) => {
     // Generate Token
     const token = generateToken(user._id, user.phoneNumber, user.role);
 
+    // Set HTTP-Only Cookie
+    res.cookie("token", token, cookieOptions);
+
     res.status(201).json({
       status: "success",
       message: "User registered successfully!",
@@ -142,6 +153,9 @@ export const loginUser = async (req, res) => {
     // Generate Token
     const token = generateToken(user._id, user.phoneNumber, user.role);
 
+    // Set HTTP-Only Cookie
+    res.cookie("token", token, cookieOptions);
+
     res.json({
       status: "success",
       message: "Logged in successfully!",
@@ -168,7 +182,21 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// 3. Get Authenticated Profile
+// 3. Logout User
+export const logoutUser = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+  });
+
+  res.json({
+    status: "success",
+    message: "Logged out successfully!"
+  });
+};
+
+// 4. Get Authenticated Profile
 export const getMe = async (req, res) => {
   try {
     res.json({
@@ -183,7 +211,7 @@ export const getMe = async (req, res) => {
   }
 };
 
-// 4. Update Profile
+// 5. Update Profile
 export const updateProfile = async (req, res) => {
   try {
     const { name, pincode, district, block, panchayat, language, primaryCrop } = req.body;

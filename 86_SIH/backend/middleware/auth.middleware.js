@@ -3,15 +3,24 @@ import User from "../models/user.model.js";
 
 export const verifyToken = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    let token = null;
+
+    // Check Authorization Header
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    } 
+    // Check HTTP-Only Cookie
+    else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) {
       return res.status(401).json({
         status: "error",
-        message: "Access denied. No token provided."
+        message: "Access denied. Authentication token missing."
       });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "super_secret_moes_monsoon_key_2026");
 
     const user = await User.findById(decoded.id).select("-password");
