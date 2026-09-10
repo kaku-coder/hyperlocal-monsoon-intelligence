@@ -366,7 +366,8 @@ export const RiskMapPage = () => {
         <TileLayer
           attribution='&copy; ESRI &copy; OpenStreetMap | MoES NCMRWF'
           url={getTileUrl(mapStyle)}
-          maxZoom={17}
+          maxNativeZoom={16}
+          maxZoom={19}
         />
 
         {/* Real-time Weather Cloud & Rain Radar Tile Overlay Layer */}
