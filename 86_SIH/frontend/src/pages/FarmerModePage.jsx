@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { translations } from '../utils/localization';
+import { playTextToSpeech, stopTextToSpeech } from '../utils/tts';
 import { 
   Sprout, 
   CloudRain, 
@@ -46,55 +47,35 @@ export const FarmerModePage = () => {
 
   // Determine farmer friendly advice text
   const getTodayAdviceText = () => {
-    if (m.break_probability >= 0.60) return t.cautionMessage;
-    if (m.heavy_rain_probability >= 0.60) return t.drainageMessage;
-    if (m.onset_probability >= 0.70) return t.proceedMessage;
-    return t.irrigationMessage;
+    if (m.break_probability >= 0.60) return t.cautionMessage || t.fmCaution || "Do not sow rice immediately. Rainfall may remain irregular.";
+    if (m.heavy_rain_probability >= 0.60) return t.drainageMessage || t.fmDrainage || "Heavy rainfall alert! Clear drainage bunds immediately.";
+    if (m.onset_probability >= 0.70) return t.proceedMessage || t.fmProceed || "Good rainfall continuity expected. Proceed with nursery sowing.";
+    return t.irrigationMessage || t.fmIrrigation || "Dry spell developing. Arrange protective irrigation.";
   };
 
   const [ttsError, setTtsError] = useState(false);
 
-  const langMap = { en: 'en-IN', hi: 'hi-IN', or: 'or-IN' };
-
   const handleAudioPlay = () => {
-    if (!('speechSynthesis' in window)) {
-      setIsPlayingAudio(!isPlayingAudio);
-      setTimeout(() => setIsPlayingAudio(false), 4000);
-      return;
-    }
-
     if (isPlayingAudio) {
-      window.speechSynthesis.cancel();
+      stopTextToSpeech();
       setIsPlayingAudio(false);
       return;
     }
 
-    window.speechSynthesis.cancel();
     setTtsError(false);
+    const adviceText = getTodayAdviceText();
+    const textToRead = `${t.appTitle || t.fmAppTitle || 'Monsoon Saathi'}. ${t.location || 'Location'}: ${selectedBlock}. ${t.todayAdvice || 'Advice'}: ${adviceText}`;
 
-    const textToRead = `${t.appTitle}. ${t.location}: ${selectedBlock}. ${t.todayAdvice}: ${getTodayAdviceText()}`;
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-    const langCode = langMap[farmerLanguage] || 'en-IN';
-    utterance.lang = langCode;
-    utterance.rate = 0.85;
-    utterance.pitch = 1;
-
-    try {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        const match = voices.find(v => v.lang.startsWith(farmerLanguage));
-        if (match) utterance.voice = match;
+    playTextToSpeech({
+      text: textToRead,
+      lang: farmerLanguage || 'en',
+      onStart: () => setIsPlayingAudio(true),
+      onEnd: () => setIsPlayingAudio(false),
+      onError: () => {
+        setIsPlayingAudio(false);
+        setTtsError(true);
       }
-    } catch (e) { /* ignore */ }
-
-    utterance.onend = () => setIsPlayingAudio(false);
-    utterance.onerror = () => {
-      setIsPlayingAudio(false);
-      setTtsError(true);
-    };
-
-    window.speechSynthesis.speak(utterance);
-    setIsPlayingAudio(true);
+    });
   };
 
   return (

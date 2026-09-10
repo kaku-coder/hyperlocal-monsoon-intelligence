@@ -1,46 +1,32 @@
 import React, { useState } from 'react';
 import { Volume2, VolumeX, AlertTriangle } from 'lucide-react';
-
-const langMap = { en: 'en-IN', hi: 'hi-IN', or: 'or-IN' };
+import { playTextToSpeech, stopTextToSpeech } from '../../utils/tts';
 
 export const SpeakButton = ({ text, lang = 'en', t, className = '' }) => {
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(false);
 
-  const label = t?.listen || 'Listen';
-  const playingLabel = t?.playing || 'Playing...';
+  const label = t?.listen || (lang === 'or' ? 'ପରାମର୍ଶ ଶୁଣନ୍ତୁ' : lang === 'hi' ? 'सलाह सुनें' : 'Listen');
+  const playingLabel = t?.playing || (lang === 'or' ? 'ପରାମର୍ଶ ଚାଲିଛି...' : lang === 'hi' ? 'सलाह सुनाई जा रही है...' : 'Playing...');
 
   const handleSpeak = () => {
-    if (!('speechSynthesis' in window)) { setError(true); return; }
-
     if (playing) {
-      window.speechSynthesis.cancel();
+      stopTextToSpeech();
       setPlaying(false);
       return;
     }
 
     setError(false);
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    const langCode = langMap[lang] || 'en-IN';
-    utterance.lang = langCode;
-    utterance.rate = 0.85;
-    utterance.pitch = 1;
-
-    try {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        const match = voices.find(v => v.lang.startsWith(lang));
-        if (match) utterance.voice = match;
+    playTextToSpeech({
+      text,
+      lang,
+      onStart: () => setPlaying(true),
+      onEnd: () => setPlaying(false),
+      onError: () => {
+        setPlaying(false);
+        setError(true);
       }
-    } catch (e) { /* ignore */ }
-
-    utterance.onend = () => setPlaying(false);
-    utterance.onerror = () => { setPlaying(false); setError(true); };
-
-    window.speechSynthesis.speak(utterance);
-    setPlaying(true);
+    });
   };
 
   if (error && !playing) {
