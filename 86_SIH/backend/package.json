@@ -17,6 +17,7 @@
     "express": "^4.22.2",
     "firebase": "^12.19.0",
     "jsonwebtoken": "^9.0.3",
+    "leaflet": "^1.9.4",
     "mongoose": "^9.9.5",
     "morgan": "^1.10.0"
   },

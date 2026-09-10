@@ -38,9 +38,22 @@ export const RiskMapPage = () => {
   } = useApp();
 
   const [activeLayer, setActiveLayer] = useState('break_risk');
+  const [mapStyle, setMapStyle] = useState('maptiler-dark');
   const [geoData, setGeoData] = useState(null);
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const maptilerKey = import.meta.env.VITE_MAPTILER_API_KEY || '4ymFs6LvsUF6t0HAQ95O';
+
+  const getTileUrl = () => {
+    if (mapStyle === 'maptiler-satellite') {
+      return `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${maptilerKey}`;
+    }
+    if (mapStyle === 'maptiler-dark') {
+      return `https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}.png?key=${maptilerKey}`;
+    }
+    return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  };
 
   useEffect(() => {
     const loadMapData = async () => {
@@ -273,10 +286,11 @@ export const RiskMapPage = () => {
         >
           <MapRecenter center={mapCenter} />
           
-          {/* CartoDB Dark Matter GIS Tiles */}
+          {/* MapTiler / CartoDB GIS Tiles */}
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CartoDB</a> Dark Matter | MoES NCMRWF'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            key={mapStyle}
+            attribution='&copy; MapTiler &copy; OpenStreetMap contributors | MoES NCMRWF'
+            url={getTileUrl()}
           />
 
           {/* Render GeoJSON Polygons with Dynamic Risk Colors */}
@@ -339,11 +353,47 @@ export const RiskMapPage = () => {
           })}
         </MapContainer>
 
-        {/* Map Overlay Badge */}
-        <div className="absolute top-4 right-4 z-[500] bg-slate-900/90 backdrop-blur-md border border-slate-700 px-3 py-2 rounded-xl text-xs shadow-xl hidden sm:flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-semibold text-slate-200">GIS Layer: {activeLayer.replace('_', ' ').toUpperCase()}</span>
-          <span className="text-slate-500 font-mono">Odisha (Zone 11)</span>
+        {/* Map Style Selector Overlay Badge */}
+        <div className="absolute top-4 right-4 z-[500] bg-slate-900/90 backdrop-blur-md border border-slate-700 p-2 rounded-2xl text-xs shadow-2xl flex flex-col gap-2">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 px-1">
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              GIS Layer: {activeLayer.replace('_', ' ').toUpperCase()}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
+            <button
+              onClick={() => setMapStyle('maptiler-dark')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                mapStyle === 'maptiler-dark'
+                  ? 'bg-sky-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🗺️ MapTiler Dark
+            </button>
+            <button
+              onClick={() => setMapStyle('maptiler-satellite')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                mapStyle === 'maptiler-satellite'
+                  ? 'bg-sky-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🛰️ Satellite Hybrid
+            </button>
+            <button
+              onClick={() => setMapStyle('carto-dark')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                mapStyle === 'carto-dark'
+                  ? 'bg-sky-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🌃 CartoDB
+            </button>
+          </div>
         </div>
       </div>
 

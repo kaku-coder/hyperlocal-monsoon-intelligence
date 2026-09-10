@@ -52,25 +52,49 @@ export const FarmerModePage = () => {
     return t.irrigationMessage;
   };
 
+  const [ttsError, setTtsError] = useState(false);
+
+  const langMap = { en: 'en-IN', hi: 'hi-IN', or: 'or-IN' };
+
   const handleAudioPlay = () => {
-    if ('speechSynthesis' in window) {
-      if (isPlayingAudio) {
-        window.speechSynthesis.cancel();
-        setIsPlayingAudio(false);
-      } else {
-        const textToRead = `${t.appTitle}. ${t.location}: ${selectedBlock}. ${t.todayAdvice}: ${getTodayAdviceText()}`;
-        const utterance = new SpeechSynthesisUtterance(textToRead);
-        utterance.lang = farmerLanguage === 'hi' ? 'hi-IN' : farmerLanguage === 'or' ? 'or-IN' : 'en-IN';
-        utterance.rate = 0.9;
-        utterance.onend = () => setIsPlayingAudio(false);
-        utterance.onerror = () => setIsPlayingAudio(false);
-        window.speechSynthesis.speak(utterance);
-        setIsPlayingAudio(true);
-      }
-    } else {
+    if (!('speechSynthesis' in window)) {
       setIsPlayingAudio(!isPlayingAudio);
       setTimeout(() => setIsPlayingAudio(false), 4000);
+      return;
     }
+
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setTtsError(false);
+
+    const textToRead = `${t.appTitle}. ${t.location}: ${selectedBlock}. ${t.todayAdvice}: ${getTodayAdviceText()}`;
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    const langCode = langMap[farmerLanguage] || 'en-IN';
+    utterance.lang = langCode;
+    utterance.rate = 0.85;
+    utterance.pitch = 1;
+
+    try {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const match = voices.find(v => v.lang.startsWith(farmerLanguage));
+        if (match) utterance.voice = match;
+      }
+    } catch (e) { /* ignore */ }
+
+    utterance.onend = () => setIsPlayingAudio(false);
+    utterance.onerror = () => {
+      setIsPlayingAudio(false);
+      setTtsError(true);
+    };
+
+    window.speechSynthesis.speak(utterance);
+    setIsPlayingAudio(true);
   };
 
   return (
@@ -174,17 +198,27 @@ export const FarmerModePage = () => {
           </p>
 
           {/* Voice Readout Button */}
-          <button
-            onClick={handleAudioPlay}
-            className={`w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg ${
-              isPlayingAudio
-                ? 'bg-amber-500 text-slate-950 animate-pulse'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-700/30'
-            }`}
-          >
-            {isPlayingAudio ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            <span>{isPlayingAudio ? t.audioPlaying : t.audioListen}</span>
-          </button>
+          {ttsError ? (
+            <button
+              onClick={handleAudioPlay}
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg bg-yellow-600 hover:bg-yellow-500 text-white"
+            >
+              <Volume2 className="h-4 w-4" />
+              <span>{farmerLanguage === 'hi' ? 'पुनः प्रयास' : farmerLanguage === 'or' ? 'ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ' : 'Retry Voice'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleAudioPlay}
+              className={`w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg ${
+                isPlayingAudio
+                  ? 'bg-amber-500 text-slate-950 animate-pulse'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-700/30'
+              }`}
+            >
+              {isPlayingAudio ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              <span>{isPlayingAudio ? t.audioPlaying : t.audioListen}</span>
+            </button>
+          )}
         </div>
 
         {/* Key Farmer Action Buttons */}
