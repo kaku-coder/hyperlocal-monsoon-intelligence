@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { RiskBadge } from '../components/common/RiskBadge';
+import { SpeakButton } from '../components/common/SpeakButton';
 import { 
   CloudRain, 
   SunMedium, 
@@ -30,7 +31,8 @@ export const CommandCenter = () => {
     setForecastHorizon,
     forecastData,
     loadingForecast,
-    setActiveTab
+    setActiveTab,
+    farmerLanguage
   } = useApp();
 
   const [alerts, setAlerts] = useState([]);
@@ -339,6 +341,11 @@ export const CommandCenter = () => {
 
             {/* Quick Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              <SpeakButton
+                text={`Sowing caution for ${selectedBlock}. Break probability is elevated. Delay rice sowing by 5 to 7 days. Rainfall deficit of 24 percent with warm ENSO conditions and low soil moisture. Prepare backup irrigation ponds.`}
+                lang={farmerLanguage}
+              />
+
               <button
                 onClick={() => setActiveTab('advisories')}
                 className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"

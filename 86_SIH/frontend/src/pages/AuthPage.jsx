@@ -52,7 +52,7 @@ const lookupPincode = async (pin) => {
 };
 
 export const AuthPage = () => {
-  const { loginUserSession, setSelectedDistrict, setSelectedBlock } = useApp();
+  const { loginUserSession, setSelectedDistrict, setSelectedBlock, setActiveTab } = useApp();
 
   const [mode, setMode] = useState('login');
 
@@ -161,6 +161,7 @@ export const AuthPage = () => {
         setSelectedDistrict(res.user.district);
         setSelectedBlock(res.user.block);
       }
+      setTimeout(() => setActiveTab('landing'), 600);
     } else {
       setErrorMsg(res.message || 'Invalid name or password.');
     }
@@ -200,6 +201,7 @@ export const AuthPage = () => {
         setSelectedDistrict(res.user.district);
         setSelectedBlock(res.user.block);
       }
+      setTimeout(() => setActiveTab('landing'), 600);
     } else {
       setErrorMsg(res.message || 'Registration failed. Phone may already be registered.');
     }

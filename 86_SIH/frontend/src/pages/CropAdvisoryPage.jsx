@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchCrops, generateAdvisory } from '../services/api';
+import { SpeakButton } from '../components/common/SpeakButton';
 import { 
   Sprout, 
   AlertTriangle, 
@@ -212,6 +213,11 @@ export const CropAdvisoryPage = () => {
           {/* Actions Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
             <div className="flex items-center gap-2">
+              <SpeakButton
+                text={getLocalized(advisory.title) + '. ' + getLocalizedArray(advisory.actionPoints).join('. ')}
+                lang={farmerLanguage}
+              />
+
               <button
                 onClick={() => setActiveTab('farmer-mode')}
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"

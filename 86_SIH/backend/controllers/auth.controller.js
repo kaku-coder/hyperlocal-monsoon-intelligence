@@ -327,7 +327,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({
       $or: [
         { phoneNumber: loginIdentifier },
-        { name: loginIdentifier }
+        { name: new RegExp(`^${loginIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, "i") }
       ]
     });
     if (!user) {

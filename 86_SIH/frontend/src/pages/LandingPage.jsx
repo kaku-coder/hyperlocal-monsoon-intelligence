@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { SpeakButton } from '../components/common/SpeakButton';
 import { 
   CloudRain, 
   Map, 
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export const LandingPage = () => {
-  const { setActiveTab } = useApp();
+  const { setActiveTab, farmerLanguage } = useApp();
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-8 max-w-7xl mx-auto space-y-12">
@@ -74,6 +75,12 @@ export const LandingPage = () => {
               <Smartphone className="h-4 w-4 text-emerald-400" />
               <span>Explore Farmer Mode (Monsoon Saathi)</span>
             </button>
+
+            <SpeakButton
+              text="Welcome to MoES Monsoon Intel. AI-powered hyperlocal monsoon onset and break prediction and crop decision support for climate-resilient agriculture across Indian farming blocks."
+              lang={farmerLanguage}
+              className="bg-sky-600 hover:bg-sky-500 shadow-sky-700/30"
+            />
           </div>
         </div>
       </div>
