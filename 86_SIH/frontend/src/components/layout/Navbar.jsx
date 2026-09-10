@@ -36,8 +36,14 @@ export const Navbar = () => {
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleDistrictChange = (e) => {
-    setSelectedDistrict(e.target.value);
+  const handleDistrictChange = async (e) => {
+    const newDistrict = e.target.value;
+    setSelectedDistrict(newDistrict);
+    localStorage.setItem('moes_selected_district', newDistrict);
+    const newBlocks = await fetchBlocks(newDistrict);
+    if (newBlocks && newBlocks.length > 0) {
+      changeLocation(newDistrict, newBlocks[0].block, newBlocks[0].id, newBlocks[0].panchayats?.[0]);
+    }
   };
 
   const handleBlockChange = (e) => {

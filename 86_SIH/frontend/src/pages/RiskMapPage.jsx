@@ -55,29 +55,46 @@ const NEARBY_BLOCKS = [
   { name: 'Koraput', district: 'Koraput', lat: 18.8135, lon: 82.7123 },
   { name: 'Rourkela', district: 'Sundargarh', lat: 22.2604, lon: 84.8536 },
   { name: 'Angul', district: 'Angul', lat: 20.8400, lon: 85.1000 },
-  { name: 'Kalahandi', district: 'Kalahandi', lat: 19.9000, lon: 83.1000 }
 ];
 
 export const RiskMapPage = () => {
-  const { selectedBlock, selectedDistrict, farmerLanguage } = useApp();
+  const { selectedBlock, selectedDistrict, farmerLanguage, user, changeLocation } = useApp();
   const lang = farmerLanguage || 'en';
 
-  const [pincode, setPincode] = useState('');
+  const [pincode, setPincode] = useState(user?.pincode || '');
   const [coords, setCoords] = useState(null);
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [blockWeathers, setBlockWeathers] = useState({});
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mapStyle, setMapStyle] = useState('maptiler-satellite');
+  const [mapStyle, setMapStyle] = useState('esri-satellite');
+  const [showClouds, setShowClouds] = useState(true);
+  const [radarTimestamp, setRadarTimestamp] = useState(null);
 
   const maptilerKey = import.meta.env.VITE_MAPTILER_API_KEY || '4ymFs6LvsUF6t0HAQ95O';
 
   const getTileUrl = (style) => {
+    if (style === 'esri-satellite') return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
     if (style === 'maptiler-satellite') return `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${maptilerKey}`;
     if (style === 'maptiler-dark') return `https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}.png?key=${maptilerKey}`;
     return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
   };
+
+  // Fetch RainViewer real-time cloud & precipitation radar timestamp
+  useEffect(() => {
+    const fetchRadar = async () => {
+      try {
+        const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        const data = await res.json();
+        const latestTime = data.radar?.nowcast?.[0]?.time || data.radar?.past?.[data.radar?.past?.length - 1]?.time;
+        if (latestTime) setRadarTimestamp(latestTime);
+      } catch (err) {
+        console.warn('RainViewer fetch error:', err);
+      }
+    };
+    fetchRadar();
+  }, []);
 
   const fetchWeather = useCallback(async (lat, lon) => {
     try {
@@ -119,6 +136,7 @@ export const RiskMapPage = () => {
   const handleSelectBlockMarker = async (block) => {
     setLoading(true);
     setCoords({ lat: block.lat, lon: block.lon, name: block.name, country: block.district });
+    changeLocation(block.district, block.name);
     await fetchWeather(block.lat, block.lon);
     setStatus(`📍 ${block.name}, ${block.district}`);
     setLoading(false);
@@ -152,6 +170,7 @@ export const RiskMapPage = () => {
             const lat = parseFloat(nomData[0].lat);
             const lon = parseFloat(nomData[0].lon);
             setCoords({ lat, lon, name: po.Name, country: po.District });
+            changeLocation(po.District, po.Block || po.Name);
             await fetchWeather(lat, lon);
             setStatus(`📍 ${po.Name}, ${po.District}`);
           } else {
@@ -167,33 +186,39 @@ export const RiskMapPage = () => {
     setLoading(false);
   };
 
+  // Auto-sync with logged in user location / selected navbar block so user never has to re-type pincode!
   useEffect(() => {
-    if (selectedBlock && !coords) {
-      const defaultSearch = async () => {
-        setLoading(true);
-        try {
-          const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${selectedBlock}+${selectedDistrict}+Odisha+India&format=json&limit=1`);
-          const nomData = await nomRes.json();
-          if (nomData.length) {
-            const lat = parseFloat(nomData[0].lat);
-            const lon = parseFloat(nomData[0].lon);
-            setCoords({ lat, lon, name: selectedBlock, country: selectedDistrict });
-            await fetchWeather(lat, lon);
-            setStatus(`📍 ${selectedBlock}, ${selectedDistrict}`);
-          } else {
-            // Default to Bhubaneswar if geocoding yields no result
-            setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
-            await fetchWeather(20.2961, 85.8245);
-          }
-        } catch (err) {
+    const activeBlock = selectedBlock || user?.block || 'Bhubaneswar';
+    const activeDistrict = selectedDistrict || user?.district || 'Khordha';
+
+    if (user?.pincode && !pincode) {
+      setPincode(user.pincode);
+    }
+
+    const defaultSearch = async () => {
+      setLoading(true);
+      try {
+        const query = user?.pincode ? `${user.pincode}+India` : `${activeBlock}+${activeDistrict}+Odisha+India`;
+        const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+        const nomData = await nomRes.json();
+        if (nomData.length) {
+          const lat = parseFloat(nomData[0].lat);
+          const lon = parseFloat(nomData[0].lon);
+          setCoords({ lat, lon, name: activeBlock, country: activeDistrict });
+          await fetchWeather(lat, lon);
+          setStatus(`📍 ${activeBlock}, ${activeDistrict}`);
+        } else {
           setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
           await fetchWeather(20.2961, 85.8245);
         }
-        setLoading(false);
-      };
-      defaultSearch();
-    }
-  }, [selectedBlock, selectedDistrict]);
+      } catch (err) {
+        setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
+        await fetchWeather(20.2961, 85.8245);
+      }
+      setLoading(false);
+    };
+    defaultSearch();
+  }, [selectedBlock, selectedDistrict, user?.pincode, user?.block, user?.district]);
 
   const w = weather;
   const f = forecast;
@@ -212,9 +237,9 @@ export const RiskMapPage = () => {
             type="text"
             value={pincode}
             onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder={lang === 'hi' ? '6 अंकों का पिनकोड (जैसे 754212)' : lang === 'or' ? '୬ ଅଙ୍କ ପିନକୋଡ୍ (ଯେପରି ୭୫୪୨୧୨)' : 'Enter Pincode (e.g. 754212)'}
+            placeholder={user?.pincode ? `User PIN: ${user.pincode}` : (lang === 'hi' ? '6 अंकों का पिनकोड' : 'Enter Pincode')}
             maxLength={6}
-            className="w-48 sm:w-64 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none font-sans font-semibold"
+            className="w-44 sm:w-56 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
           />
           <button
             type="submit"
@@ -226,20 +251,43 @@ export const RiskMapPage = () => {
           </button>
         </form>
 
-        {/* Right: Layer Switcher & Active Location Badge */}
-        <div className="pointer-events-auto flex items-center gap-2">
+        {/* Right: Layer Switcher, Cloud Radar & Active Location Badge */}
+        <div className="pointer-events-auto flex flex-wrap items-center gap-2">
+          
+          {/* Live Cloud Radar Toggle */}
+          <button
+            onClick={() => setShowClouds(!showClouds)}
+            className={`px-3 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer border shadow-2xl flex items-center gap-1.5 ${
+              showClouds
+                ? 'bg-gradient-to-r from-sky-600 to-blue-700 text-white border-sky-400 shadow-sky-900/50'
+                : 'bg-slate-900/90 text-slate-400 border-slate-700 hover:text-white'
+            }`}
+          >
+            <Cloud className="h-3.5 w-3.5 text-cyan-300" />
+            <span>☁️ {showClouds ? 'Clouds Radar ON' : 'Clouds Radar OFF'}</span>
+          </button>
+
+          {/* Map Layer Style Switcher */}
           <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 p-1 rounded-2xl shadow-2xl flex items-center text-xs">
             <button
+              onClick={() => setMapStyle('esri-satellite')}
+              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                mapStyle === 'esri-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🌍 ESRI Satellite HD
+            </button>
+            <button
               onClick={() => setMapStyle('maptiler-satellite')}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                 mapStyle === 'maptiler-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              🌍 Satellite Hybrid
+              🛰️ MapTiler Hybrid
             </button>
             <button
               onClick={() => setMapStyle('maptiler-dark')}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                 mapStyle === 'maptiler-dark' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -270,9 +318,18 @@ export const RiskMapPage = () => {
         <MapRecenter center={coords ? [coords.lat, coords.lon] : null} />
 
         <TileLayer
-          attribution='&copy; MapTiler &copy; OSM | MoES NCMRWF'
+          attribution='&copy; ESRI &copy; MapTiler &copy; OSM | MoES NCMRWF'
           url={getTileUrl(mapStyle)}
         />
+
+        {/* Real-time Weather Cloud & Rain Radar Tile Overlay Layer */}
+        {showClouds && radarTimestamp && (
+          <TileLayer
+            url={`https://tilecache.rainviewer.com/v2/radar/${radarTimestamp}/256/{z}/{x}/{y}/2/1_1.png`}
+            opacity={0.65}
+            zIndex={400}
+          />
+        )}
 
         {/* Render Interactive Weather Pins for Surrounding Blocks */}
         {NEARBY_BLOCKS.map((block) => {

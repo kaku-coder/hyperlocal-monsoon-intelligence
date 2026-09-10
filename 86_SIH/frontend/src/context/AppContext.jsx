@@ -13,14 +13,26 @@ export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('moes_jwt_token') || null);
 
-  // Location Hierarchy State (Default: Odisha -> Kendrapara -> Rajkanika)
+  const getSavedUser = () => {
+    try {
+      const u = localStorage.getItem('moes_user_data');
+      return u ? JSON.parse(u) : null;
+    } catch { return null; }
+  };
+  const savedUser = getSavedUser();
+
+  // Location Hierarchy State (Persisted in localStorage & synced with logged-in user)
   const [selectedState, setSelectedState] = useState('Odisha');
   const [districts, setDistricts] = useState([]);
-  const [selectedDistrict, setSelectedDistrict] = useState('Kendrapara');
+  const [selectedDistrict, setSelectedDistrict] = useState(() => {
+    return localStorage.getItem('moes_selected_district') || savedUser?.district || 'Khordha';
+  });
   const [blocks, setBlocks] = useState([]);
-  const [selectedBlock, setSelectedBlock] = useState('Rajkanika');
+  const [selectedBlock, setSelectedBlock] = useState(() => {
+    return localStorage.getItem('moes_selected_block') || savedUser?.block || 'Bhubaneswar';
+  });
   const [selectedPanchayat, setSelectedPanchayat] = useState('Dangarpatna');
-  const [selectedLocationId, setSelectedLocationId] = useState('od-kendrapara-rajkanika');
+  const [selectedLocationId, setSelectedLocationId] = useState('od-khordha-bhubaneswar');
 
   // Forecast Horizon (7, 14, 21, 30 days)
   const [forecastHorizon, setForecastHorizon] = useState(7);
@@ -56,8 +68,6 @@ export const AppProvider = ({ children }) => {
         try {
           const parsed = JSON.parse(savedUser);
           setUser(parsed);
-          if (parsed.district) setSelectedDistrict(parsed.district);
-          if (parsed.block) setSelectedBlock(parsed.block);
         } catch (e) {}
       }
 
@@ -66,38 +76,8 @@ export const AppProvider = ({ children }) => {
         if (res && res.user) {
           setUser(res.user);
           localStorage.setItem('moes_user_data', JSON.stringify(res.user));
-          if (res.user.district) setSelectedDistrict(res.user.district);
-          if (res.user.block) setSelectedBlock(res.user.block);
         } else {
           logoutUserSession();
-        }
-      }
-
-      // Auto-geocode pincode for map if no saved location
-      const savedLoc = localStorage.getItem('moes_map_location');
-      if (!savedLoc) {
-        const userData = JSON.parse(localStorage.getItem('moes_user_data') || '{}');
-        const pin = userData.pincode;
-        if (pin && pin.length === 6) {
-          try {
-            const nomRes = await fetch(
-              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(pin)}+India&format=json&limit=1`,
-              { headers: { 'Accept-Language': 'en' } }
-            );
-            if (nomRes.ok) {
-              const nomData = await nomRes.json();
-              if (nomData.length > 0) {
-                setMapLocation({
-                  lat: parseFloat(nomData[0].lat),
-                  lng: parseFloat(nomData[0].lon),
-                  pincode: pin,
-                  address: nomData[0].display_name || '',
-                  district: userData.district || '',
-                  block: userData.block || '',
-                });
-              }
-            }
-          } catch {}
         }
       }
     };
@@ -109,7 +89,20 @@ export const AppProvider = ({ children }) => {
     setUser(userData);
     setToken(authToken);
     if (authToken) localStorage.setItem('moes_jwt_token', authToken);
-    if (userData) localStorage.setItem('moes_user_data', JSON.stringify(userData));
+    if (userData) {
+      localStorage.setItem('moes_user_data', JSON.stringify(userData));
+      if (userData.district) {
+        setSelectedDistrict(userData.district);
+        localStorage.setItem('moes_selected_district', userData.district);
+      }
+      if (userData.block) {
+        setSelectedBlock(userData.block);
+        localStorage.setItem('moes_selected_block', userData.block);
+      }
+      if (userData.pincode) {
+        localStorage.setItem('moes_user_pincode', userData.pincode);
+      }
+    }
   };
 
   // Logout session helper
@@ -118,6 +111,8 @@ export const AppProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('moes_jwt_token');
     localStorage.removeItem('moes_user_data');
+    localStorage.removeItem('moes_selected_district');
+    localStorage.removeItem('moes_selected_block');
     await logoutUserApi();
   };
 
@@ -136,17 +131,6 @@ export const AppProvider = ({ children }) => {
       if (!selectedDistrict) return;
       const blist = await fetchBlocks(selectedDistrict);
       setBlocks(blist);
-      
-      if (blist.length > 0) {
-        const found = blist.find(b => b.block.toLowerCase() === selectedBlock.toLowerCase());
-        if (!found) {
-          setSelectedBlock(blist[0].block);
-          setSelectedLocationId(blist[0].id);
-          if (blist[0].panchayats?.length > 0) {
-            setSelectedPanchayat(blist[0].panchayats[0]);
-          }
-        }
-      }
     };
     loadBlocks();
   }, [selectedDistrict]);
@@ -166,8 +150,14 @@ export const AppProvider = ({ children }) => {
 
   // Handler to select a block cleanly
   const changeLocation = (district, block, locId, panchayat) => {
-    setSelectedDistrict(district);
-    setSelectedBlock(block);
+    if (district) {
+      setSelectedDistrict(district);
+      localStorage.setItem('moes_selected_district', district);
+    }
+    if (block) {
+      setSelectedBlock(block);
+      localStorage.setItem('moes_selected_block', block);
+    }
     if (locId) setSelectedLocationId(locId);
     if (panchayat) setSelectedPanchayat(panchayat);
   };
