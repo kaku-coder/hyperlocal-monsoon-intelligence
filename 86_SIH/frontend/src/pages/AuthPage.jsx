@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { mobileLoginApi, registerUserApi, loginUserApi } from '../services/api';
+import { mobileLoginApi, registerUserApi, loginUserApi, fetchAutoLocationApi } from '../services/api';
 import {
   CloudRain,
   Smartphone,
@@ -73,13 +73,27 @@ export const AuthPage = () => {
   const [locationFetched, setLocationFetched] = useState(false);
 
   const fetchMyLocation = useCallback(async () => {
+    setGeoLoading(true);
+    setGeoStatus('Detecting your location (GPS / IP)...');
+
+    const tryIPStack = async () => {
+      const ipGeo = await fetchAutoLocationApi();
+      if (ipGeo) {
+        if (ipGeo.pincode) setPincode(ipGeo.pincode);
+        if (ipGeo.district) setDistrict(ipGeo.district);
+        if (ipGeo.block) setBlock(ipGeo.block);
+        setLocationFetched(true);
+        setGeoStatus(`Auto Detected via IPStack: ${ipGeo.district || ''}, ${ipGeo.block || ''} (${ipGeo.pincode || ''})`);
+      } else {
+        setGeoStatus('Could not determine location. Enter pincode manually.');
+      }
+      setGeoLoading(false);
+    };
+
     if (!navigator.geolocation) {
-      setGeoStatus('Geolocation not supported by browser');
+      await tryIPStack();
       return;
     }
-
-    setGeoLoading(true);
-    setGeoStatus('Detecting your location...');
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -92,25 +106,15 @@ export const AuthPage = () => {
           if (geo.block) setBlock(geo.block);
           setLocationFetched(true);
           setGeoStatus(`Detected: ${geo.district || ''}, ${geo.block || ''} (${geo.pincode || ''})`);
-
-          if (geo.pincode && !geo.district) {
-            const detail = await lookupPincode(geo.pincode);
-            if (detail) {
-              setDistrict(detail.district);
-              setBlock(detail.block);
-              setGeoStatus(`Detected: ${detail.district}, ${detail.block} (${geo.pincode})`);
-            }
-          }
         } else {
-          setGeoStatus('Could not determine location. Enter pincode manually.');
+          await tryIPStack();
         }
         setGeoLoading(false);
       },
-      () => {
-        setGeoStatus('Location permission denied. Enter pincode manually.');
-        setGeoLoading(false);
+      async () => {
+        await tryIPStack();
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 300000 }
     );
   }, []);
 

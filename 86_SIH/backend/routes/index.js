@@ -10,6 +10,7 @@ router.use("/auth", authRoutes);
 
 // Locations
 router.get("/locations", controllers.getAllLocations);
+router.get("/location/auto-ip", controllers.getAutoLocationByIP);
 router.get("/districts", controllers.getDistrictsList);
 router.get("/blocks/:district", controllers.getBlocksForDistrict);
 router.get("/panchayats/:block", controllers.getPanchayatsForBlock);

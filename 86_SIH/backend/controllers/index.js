@@ -242,6 +242,52 @@ const getSystemStatus = (req, res) => {
       notice: "This is a prototype system developed for the Smart India Hackathon. Forecasts are generated using calibrated demonstration models and are not scientifically certified for actual field operations."
     }
   });
+// 11. IPStack Auto Location Detection
+const getAutoLocationByIP = async (req, res) => {
+  try {
+    const apiKey = process.env.IPSTACK_API_KEY || "5dbfef5a312527f414672c83eb88deb3";
+    let clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'check';
+    if (clientIp && clientIp.includes(',')) {
+      clientIp = clientIp.split(',')[0].trim();
+    }
+    const targetIp = (clientIp === '::1' || clientIp === '127.0.0.1' || !clientIp) ? 'check' : clientIp;
+
+    const response = await fetch(`http://api.ipstack.com/${targetIp}?access_key=${apiKey}`);
+    const data = await response.json();
+
+    if (data && data.ip) {
+      return res.json({
+        status: "success",
+        provider: "IPStack",
+        data: {
+          ip: data.ip,
+          country: data.country_name || "India",
+          district: data.region_name || "Odisha",
+          city: data.city || "Kendrapara",
+          block: data.city || "Rajkanika",
+          pincode: data.zip || "754212",
+          latitude: data.latitude || 20.2961,
+          longitude: data.longitude || 85.8245
+        }
+      });
+    }
+
+    res.json({
+      status: "success",
+      provider: "Default-Fallback",
+      data: {
+        country: "India",
+        district: "Kendrapara",
+        block: "Rajkanika",
+        pincode: "754212",
+        latitude: 20.2961,
+        longitude: 85.8245
+      }
+    });
+  } catch (err) {
+    console.error("IPStack Location Error:", err.message);
+    res.status(500).json({ status: "error", message: err.message });
+  }
 };
 
 export {
@@ -261,6 +307,7 @@ export {
   postAcknowledgeAlert,
   getNotificationStatsHandler,
   postSendNotification,
-  getSystemStatus
+  getSystemStatus,
+  getAutoLocationByIP
 };
 

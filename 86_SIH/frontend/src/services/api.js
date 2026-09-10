@@ -101,6 +101,19 @@ export const logoutUserApi = async () => {
   }
 };
 
+export const fetchAutoLocationApi = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/location/auto-ip`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.data;
+    }
+  } catch (err) {
+    console.warn("IPStack auto-location fallback error", err);
+  }
+  return null;
+};
+
 export const fetchLocations = async () => {
   try {
     const res = await fetch(`${API_BASE_URL}/locations`);
