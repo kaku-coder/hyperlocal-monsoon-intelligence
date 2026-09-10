@@ -113,9 +113,9 @@ export const RiskMapPage = () => {
 
   const getTileUrl = (style) => {
     if (style === 'esri-satellite') {
-      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      return 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
     }
-    return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   };
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
