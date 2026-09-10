@@ -3,7 +3,89 @@
  * Connects to Express Backend with automatic fallback if backend is momentarily unreachable.
  */
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// --- AUTH APIs ---
+export const sendOtpApi = async (phoneNumber) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("sendOtpApi error", err);
+    return { status: "error", message: "Network error. Please try again." };
+  }
+};
+
+export const verifyOtpApi = async (payload) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("verifyOtpApi error", err);
+    return { status: "error", message: "Network error. Please try again." };
+  }
+};
+
+export const registerUserApi = async (userData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("registerUserApi error", err);
+    return { status: "error", message: "Network error. Please try again." };
+  }
+};
+
+export const loginUserApi = async (phoneNumber, password) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber, password })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("loginUserApi error", err);
+    return { status: "error", message: "Network error. Please try again." };
+  }
+};
+
+export const fetchMeApi = async (token) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      }
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error("fetchMeApi error", err);
+  }
+  return null;
+};
+
+export const logoutUserApi = async () => {
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' });
+  } catch (err) {
+    console.error("logoutUserApi error", err);
+  }
+};
 
 export const fetchLocations = async () => {
   try {

@@ -1,17 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import AuthModal from '../auth/AuthModal';
 import { 
   CloudRain, 
   MapPin, 
   Sprout, 
   ShieldCheck, 
   Bell, 
-  Sun, 
-  Moon, 
-  Globe, 
   ChevronRight,
   Activity,
-  UserCheck
+  UserCheck,
+  User,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -20,24 +21,27 @@ export const Navbar = () => {
     setActiveTab, 
     farmerLanguage, 
     setFarmerLanguage,
-    theme,
-    toggleTheme,
+    user,
+    isLoggedIn,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    logoutUserSession,
     selectedState,
     districts,
     selectedDistrict,
     setSelectedDistrict,
     blocks,
     selectedBlock,
-    setSelectedBlock,
+    panchayatsList = ['Dangarpatna', 'Katana', 'Meghapur'],
     selectedPanchayat,
     setSelectedPanchayat,
-    setSelectedLocationId,
     changeLocation
   } = useApp();
 
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   const handleDistrictChange = (e) => {
-    const dist = e.target.value;
-    setSelectedDistrict(dist);
+    setSelectedDistrict(e.target.value);
   };
 
   const handleBlockChange = (e) => {
@@ -53,7 +57,7 @@ export const Navbar = () => {
   };
 
   const currentBlockObj = blocks.find(b => b.block === selectedBlock);
-  const panchayatsList = currentBlockObj?.panchayats || ['Dangarpatna', 'Katana', 'Meghapur'];
+  const activePanchayats = currentBlockObj?.panchayats || panchayatsList;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
@@ -132,7 +136,7 @@ export const Navbar = () => {
             onChange={handlePanchayatChange}
             className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
           >
-            {panchayatsList.map(p => (
+            {activePanchayats.map(p => (
               <option key={p} value={p} className="bg-slate-900 text-white">
                 GP: {p}
               </option>
@@ -140,7 +144,7 @@ export const Navbar = () => {
           </select>
         </div>
 
-        {/* Right: Mode Switcher & Quick Actions */}
+        {/* Right: Mode Switcher, Language & Auth Button */}
         <div className="flex items-center gap-2 sm:gap-3">
           
           {/* Toggle between Officer Command Center and Farmer Mode */}
@@ -163,8 +167,8 @@ export const Navbar = () => {
             </button>
           )}
 
-          {/* Language Selector (especially active in Farmer Mode) */}
-          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+          {/* Language Selector */}
+          <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
             <button
               onClick={() => setFarmerLanguage('en')}
               className={`px-2 py-1 rounded font-medium transition-colors ${
@@ -194,16 +198,73 @@ export const Navbar = () => {
           {/* Alerts Bell */}
           <button
             onClick={() => setActiveTab('alerts')}
-            className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+            className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
             title="Active Meteorological Alerts"
           >
             <Bell className="h-4 w-4" />
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500 animate-ping" />
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
           </button>
+
+          {/* Auth State Button */}
+          {isLoggedIn ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs text-white font-semibold transition-all cursor-pointer shadow-md"
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span className="max-w-[80px] sm:max-w-[120px] truncate">{user.name || user.phoneNumber}</span>
+                <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded font-mono uppercase font-bold">
+                  {user.role || 'FARMER'}
+                </span>
+              </button>
+
+              {/* Profile Dropdown */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-56 p-2 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-2 text-xs z-50 animate-in fade-in duration-150">
+                  <div className="p-2 border-b border-slate-800 space-y-0.5">
+                    <div className="font-bold text-white text-sm">{user.name}</div>
+                    <div className="text-slate-400 font-mono text-[11px]">+91 {user.phoneNumber}</div>
+                    <div className="text-[10px] text-amber-300 font-semibold mt-1">
+                      📍 {user.block || selectedBlock} ({user.pincode || '754212'})
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      logoutUserSession();
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-950/60 font-semibold transition-colors cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out / Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span>Sign In</span>
+            </button>
+          )}
+
         </div>
 
       </div>
+
+      {/* Auth Modal Container */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
     </header>
   );
 };
