@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { sendOtpApi, verifyOtpApi, loginUserApi, registerUserApi } from '../services/api';
+import { mobileLoginApi, registerUserApi } from '../services/api';
 import {
   CloudRain,
   Smartphone,
-  KeyRound,
   UserPlus,
   MapPin,
   ArrowRight,
@@ -15,7 +14,8 @@ import {
   Eye,
   EyeOff,
   Crosshair,
-  LocateFixed
+  LocateFixed,
+  KeyRound
 } from 'lucide-react';
 
 const reverseGeocode = async (lat, lng) => {
@@ -27,12 +27,9 @@ const reverseGeocode = async (lat, lng) => {
     if (!res.ok) return null;
     const data = await res.json();
     const addr = data.address || {};
-
     const pincode = addr.postcode || '';
     const district = addr.state_district || addr.county || '';
-    const block =
-      addr.suburb || addr.village || addr.town || addr.city || district;
-
+    const block = addr.suburb || addr.village || addr.town || addr.city || district;
     return { pincode: pincode.replace(/\s/g, ''), district, block };
   } catch {
     return null;
@@ -58,17 +55,13 @@ export const AuthPage = () => {
   const { loginUserSession, setSelectedDistrict, setSelectedBlock } = useApp();
 
   const [mode, setMode] = useState('login');
-  const [otpStep, setOtpStep] = useState(1);
 
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pincode, setPincode] = useState('');
   const [district, setDistrict] = useState('');
   const [block, setBlock] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [generatedDemoOtp, setGeneratedDemoOtp] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -80,7 +73,7 @@ export const AuthPage = () => {
 
   const fetchMyLocation = useCallback(async () => {
     if (!navigator.geolocation) {
-      setGeoStatus('Geolocation not supported');
+      setGeoStatus('Geolocation not supported by browser');
       return;
     }
 
@@ -108,12 +101,12 @@ export const AuthPage = () => {
             }
           }
         } else {
-          setGeoStatus('Could not determine location. Enter manually.');
+          setGeoStatus('Could not determine location. Enter pincode manually.');
         }
         setGeoLoading(false);
       },
       () => {
-        setGeoStatus('Location permission denied. Enter manually.');
+        setGeoStatus('Location permission denied. Enter pincode manually.');
         setGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
@@ -140,31 +133,29 @@ export const AuthPage = () => {
     }
   };
 
-  const resetFields = () => {
-    setErrorMsg('');
-    setSuccessMsg('');
-    setOtpStep(1);
-    setOtpCode('');
-    setGeneratedDemoOtp('');
-  };
-
   const switchMode = (m) => {
     setMode(m);
-    resetFields();
+    setErrorMsg('');
+    setSuccessMsg('');
   };
 
-  const handlePasswordLogin = async (e) => {
+  const handleMobileLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!phoneNumber || !password) {
-      setErrorMsg('Please enter your Phone Number and Password');
+    if (!phoneNumber) {
+      setErrorMsg('Please enter your Mobile Number');
+      return;
+    }
+
+    if (phoneNumber.length < 10) {
+      setErrorMsg('Enter a valid 10-digit Mobile Number');
       return;
     }
 
     setLoading(true);
-    const res = await loginUserApi(phoneNumber, password);
+    const res = await mobileLoginApi(phoneNumber);
     setLoading(false);
 
     if (res.status === 'success' && res.token) {
@@ -175,7 +166,7 @@ export const AuthPage = () => {
         setSelectedBlock(res.user.block);
       }
     } else {
-      setErrorMsg(res.message || 'Invalid phone number or password.');
+      setErrorMsg(res.message || 'Login failed. Please try again.');
     }
   };
 
@@ -184,18 +175,13 @@ export const AuthPage = () => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!name || !phoneNumber || !password || !pincode) {
-      setErrorMsg('Please fill in all fields.');
+    if (!name || !phoneNumber) {
+      setErrorMsg('Please fill in Name and Mobile Number.');
       return;
     }
 
     if (phoneNumber.length < 10) {
-      setErrorMsg('Phone Number must be a valid 10-digit number.');
-      return;
-    }
-
-    if (pincode.length !== 6) {
-      setErrorMsg('Pincode must be a valid 6-digit number.');
+      setErrorMsg('Mobile Number must be a valid 10-digit number.');
       return;
     }
 
@@ -203,8 +189,8 @@ export const AuthPage = () => {
     const res = await registerUserApi({
       name,
       phoneNumber,
-      password,
-      pincode,
+      password: `Farmer_${phoneNumber}`,
+      pincode: pincode || '754212',
       district: district || 'Kendrapara',
       block: block || 'Rajkanika',
       role: 'FARMER'
@@ -212,72 +198,14 @@ export const AuthPage = () => {
     setLoading(false);
 
     if (res.status === 'success' && res.token) {
-      setSuccessMsg('Account created successfully!');
+      setSuccessMsg('Account created & logged in!');
       loginUserSession(res.user, res.token);
       if (res.user?.district && res.user?.block) {
         setSelectedDistrict(res.user.district);
         setSelectedBlock(res.user.block);
       }
     } else {
-      setErrorMsg(res.message || 'Registration failed. Phone number may already be registered.');
-    }
-  };
-
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    if (!phoneNumber || phoneNumber.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit Mobile Number');
-      return;
-    }
-
-    setLoading(true);
-    const res = await sendOtpApi(phoneNumber);
-    setLoading(false);
-
-    if (res.status === 'success') {
-      setOtpStep(2);
-      setSuccessMsg(`OTP sent to +91 ${phoneNumber}`);
-      if (res.demo_otp) {
-        setGeneratedDemoOtp(res.demo_otp);
-      }
-    } else {
-      setErrorMsg(res.message || 'Failed to send OTP.');
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    if (!otpCode) {
-      setErrorMsg('Please enter the 6-digit OTP');
-      return;
-    }
-
-    setLoading(true);
-    const res = await verifyOtpApi({
-      phoneNumber,
-      otp: otpCode,
-      name: name || 'Farmer',
-      pincode: pincode || '754212',
-      district: district || 'Kendrapara',
-      block: block || 'Rajkanika'
-    });
-    setLoading(false);
-
-    if (res.status === 'success' && res.token) {
-      setSuccessMsg('OTP verified & logged in!');
-      loginUserSession(res.user, res.token);
-      if (res.user?.district && res.user?.block) {
-        setSelectedDistrict(res.user.district);
-        setSelectedBlock(res.user.block);
-      }
-    } else {
-      setErrorMsg(res.message || 'Invalid or expired OTP.');
+      setErrorMsg(res.message || 'Registration failed. Phone may already be registered.');
     }
   };
 
@@ -295,7 +223,7 @@ export const AuthPage = () => {
               MoES Monsoon Intel
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Sign in to access localized advisories & alerts
+              Cloud alerts & weather updates sent to your mobile
             </p>
           </div>
         </div>
@@ -327,17 +255,6 @@ export const AuthPage = () => {
               <UserPlus className="h-3.5 w-3.5" />
               <span>Create Account</span>
             </button>
-            <button
-              onClick={() => switchMode('otp')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg transition-all cursor-pointer ${
-                mode === 'otp'
-                  ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-              <span>OTP Login</span>
-            </button>
           </div>
 
           {/* Feedback Messages */}
@@ -355,12 +272,15 @@ export const AuthPage = () => {
             </div>
           )}
 
-          {/* SIGN IN */}
+          {/* SIGN IN — Mobile Number Only */}
           {mode === 'login' && (
-            <form onSubmit={handlePasswordLogin} className="space-y-4">
+            <form onSubmit={handleMobileLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  Mobile Number
+                  <span className="flex items-center gap-1.5">
+                    <Smartphone className="h-3 w-3 text-sky-400" />
+                    Enter your Mobile Number
+                  </span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">+91</span>
@@ -370,29 +290,13 @@ export const AuthPage = () => {
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="9876543210"
                     maxLength={10}
+                    autoFocus
                     className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full px-4 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Cloud & weather alerts will be sent to this number
+                </p>
               </div>
 
               <button
@@ -400,23 +304,27 @@ export const AuthPage = () => {
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-700/20 transition-all cursor-pointer disabled:opacity-50"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Sign In</span>}
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <><span>Sign In</span> <ArrowRight className="h-4 w-4" /></>
+                )}
               </button>
 
               <p className="text-[11px] text-center text-slate-500 pt-1">
-                Don't have an account?{' '}
+                New farmer?{' '}
                 <button
                   type="button"
                   onClick={() => switchMode('register')}
                   className="text-sky-400 font-bold hover:underline cursor-pointer"
                 >
-                  Create one
+                  Create Account
                 </button>
               </p>
             </form>
           )}
 
-          {/* CREATE ACCOUNT */}
+          {/* CREATE ACCOUNT — Name + Mobile + Auto Location */}
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
@@ -426,12 +334,18 @@ export const AuthPage = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Ramesh Chandra Behera"
+                  autoFocus
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Mobile Number</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Smartphone className="h-3 w-3 text-sky-400" />
+                    Mobile Number
+                  </span>
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">+91</span>
                   <input
@@ -465,14 +379,14 @@ export const AuthPage = () => {
                     ) : (
                       <LocateFixed className="h-3 w-3" />
                     )}
-                    {geoLoading ? 'Detecting...' : 'Detect Location'}
+                    {geoLoading ? 'Detecting...' : 'Auto Detect'}
                   </button>
                 </div>
                 <input
                   type="text"
                   value={pincode}
                   onChange={(e) => handlePincodeChange(e.target.value)}
-                  placeholder="e.g. 754212"
+                  placeholder="Auto-detected or type 6-digit pincode"
                   maxLength={6}
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 />
@@ -484,7 +398,7 @@ export const AuthPage = () => {
                 )}
               </div>
 
-              {/* Auto-filled District & Block (read-only display) */}
+              {/* Auto-filled District & Block */}
               {(district || block) && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
@@ -498,36 +412,20 @@ export const AuthPage = () => {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a password (min 6 chars)"
-                    className="w-full px-4 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-700/20 transition-all cursor-pointer disabled:opacity-50"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Create Account</span>}
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <><span>Create Account</span> <ArrowRight className="h-4 w-4" /></>
+                )}
               </button>
 
               <p className="text-[11px] text-center text-slate-500 pt-1">
-                Already have an account?{' '}
+                Already registered?{' '}
                 <button
                   type="button"
                   onClick={() => switchMode('login')}
@@ -538,95 +436,6 @@ export const AuthPage = () => {
               </p>
             </form>
           )}
-
-          {/* OTP LOGIN */}
-          {mode === 'otp' && (
-            <div>
-              {otpStep === 1 ? (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                      Enter Mobile Number
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">+91</span>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="9876543210"
-                        maxLength={10}
-                        className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-700/20 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <><span>Send OTP</span> <ArrowRight className="h-4 w-4" /></>
-                    )}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  {generatedDemoOtp && (
-                    <div className="p-3 rounded-xl bg-amber-950/60 border border-amber-700/50 text-xs space-y-2">
-                      <div className="flex items-center justify-between text-amber-300 font-bold">
-                        <span>Demo OTP:</span>
-                        <span className="font-mono text-base tracking-widest text-white bg-slate-950 px-3 py-1 rounded-lg border border-amber-600">
-                          {generatedDemoOtp}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setOtpCode(generatedDemoOtp)}
-                        className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-lg text-xs transition-colors cursor-pointer"
-                      >
-                        Auto-Fill OTP
-                      </button>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                      Enter 6-Digit OTP
-                    </label>
-                    <input
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="123456"
-                      maxLength={6}
-                      className="w-full px-4 py-3 bg-slate-950 border border-sky-600 rounded-xl text-lg font-mono font-bold tracking-[0.3em] text-center text-amber-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
-                    />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setOtpStep(1)}
-                      className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Verify & Sign In</span>}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Trust Badges */}
@@ -636,7 +445,7 @@ export const AuthPage = () => {
             MoES Secured
           </span>
           <span>•</span>
-          <span>All users are registered Farmers</span>
+          <span>Weather alerts via SMS</span>
         </div>
       </div>
     </div>

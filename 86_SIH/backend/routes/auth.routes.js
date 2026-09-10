@@ -4,6 +4,7 @@ import {
   verifyOtp, 
   registerUser, 
   loginUser, 
+  mobileLogin,
   logoutUser, 
   getMe, 
   updateProfile 
@@ -15,6 +16,9 @@ const router = express.Router();
 // Mobile Number OTP Routes
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
+
+// Quick Mobile Login (phone only)
+router.post("/mobile-login", mobileLogin);
 
 // Standard Password Routes
 router.post("/register", registerUser);

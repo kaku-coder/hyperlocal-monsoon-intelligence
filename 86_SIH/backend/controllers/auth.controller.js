@@ -156,6 +156,70 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
+// 2. Mobile Number Quick Login (no password needed)
+export const mobileLogin = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({
+        status: "error",
+        message: "Please provide a phone number."
+      });
+    }
+
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number. Must be a 10-digit Indian mobile number."
+      });
+    }
+
+    let user = await User.findOne({ phoneNumber });
+
+    if (!user) {
+      const defaultPassword = await bcrypt.hash(`Mobile_${Date.now()}`, 10);
+      user = await User.create({
+        name: "Farmer",
+        phoneNumber,
+        password: defaultPassword,
+        pincode: "754212",
+        district: "Kendrapara",
+        block: "Rajkanika",
+        role: "FARMER"
+      });
+    }
+
+    const token = generateToken(user._id, user.phoneNumber, user.role);
+    res.cookie("token", token, cookieOptions);
+
+    res.json({
+      status: "success",
+      message: "Logged in successfully!",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+        pincode: user.pincode,
+        district: user.district,
+        block: user.block,
+        panchayat: user.panchayat,
+        role: user.role,
+        language: user.language,
+        primaryCrop: user.primaryCrop
+      }
+    });
+  } catch (error) {
+    console.error("Mobile Login Error:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message || "Login failed."
+    });
+  }
+};
+
 // 3. Register User (Password-Based)
 export const registerUser = async (req, res) => {
   try {

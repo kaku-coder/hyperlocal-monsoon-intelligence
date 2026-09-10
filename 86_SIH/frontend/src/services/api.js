@@ -62,6 +62,20 @@ export const loginUserApi = async (phoneNumber, password) => {
   }
 };
 
+export const mobileLoginApi = async (phoneNumber) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/mobile-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("mobileLoginApi error", err);
+    return { status: "error", message: "Network error. Please try again." };
+  }
+};
+
 export const fetchMeApi = async (token) => {
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
