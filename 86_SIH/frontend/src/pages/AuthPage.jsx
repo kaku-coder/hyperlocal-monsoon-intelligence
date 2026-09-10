@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { sendOtpApi, verifyOtpApi, loginUserApi, registerUserApi } from '../services/api';
 import {
@@ -13,8 +13,46 @@ import {
   Loader2,
   ShieldCheck,
   Eye,
-  EyeOff
+  EyeOff,
+  Crosshair,
+  LocateFixed
 } from 'lucide-react';
+
+const reverseGeocode = async (lat, lng) => {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data.address || {};
+
+    const pincode = addr.postcode || '';
+    const district = addr.state_district || addr.county || '';
+    const block =
+      addr.suburb || addr.village || addr.town || addr.city || district;
+
+    return { pincode: pincode.replace(/\s/g, ''), district, block };
+  } catch {
+    return null;
+  }
+};
+
+const lookupPincode = async (pin) => {
+  try {
+    const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length) {
+      const po = data[0].PostOffice[0];
+      return { district: po.District, block: po.Block || po.Name, state: po.State };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 export const AuthPage = () => {
   const { loginUserSession, setSelectedDistrict, setSelectedBlock } = useApp();
@@ -27,12 +65,80 @@ export const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pincode, setPincode] = useState('');
+  const [district, setDistrict] = useState('');
+  const [block, setBlock] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [generatedDemoOtp, setGeneratedDemoOtp] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoStatus, setGeoStatus] = useState('');
+  const [locationFetched, setLocationFetched] = useState(false);
+
+  const fetchMyLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setGeoStatus('Geolocation not supported');
+      return;
+    }
+
+    setGeoLoading(true);
+    setGeoStatus('Detecting your location...');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const geo = await reverseGeocode(latitude, longitude);
+
+        if (geo) {
+          if (geo.pincode) setPincode(geo.pincode);
+          if (geo.district) setDistrict(geo.district);
+          if (geo.block) setBlock(geo.block);
+          setLocationFetched(true);
+          setGeoStatus(`Detected: ${geo.district || ''}, ${geo.block || ''} (${geo.pincode || ''})`);
+
+          if (geo.pincode && !geo.district) {
+            const detail = await lookupPincode(geo.pincode);
+            if (detail) {
+              setDistrict(detail.district);
+              setBlock(detail.block);
+              setGeoStatus(`Detected: ${detail.district}, ${detail.block} (${geo.pincode})`);
+            }
+          }
+        } else {
+          setGeoStatus('Could not determine location. Enter manually.');
+        }
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoStatus('Location permission denied. Enter manually.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (mode === 'register' && !locationFetched && !geoLoading) {
+      fetchMyLocation();
+    }
+  }, [mode, locationFetched, geoLoading, fetchMyLocation]);
+
+  const handlePincodeChange = async (val) => {
+    setPincode(val);
+    if (val.length === 6) {
+      const detail = await lookupPincode(val);
+      if (detail) {
+        setDistrict(detail.district);
+        setBlock(detail.block);
+      }
+    } else {
+      setDistrict('');
+      setBlock('');
+    }
+  };
 
   const resetFields = () => {
     setErrorMsg('');
@@ -99,8 +205,8 @@ export const AuthPage = () => {
       phoneNumber,
       password,
       pincode,
-      district: 'Kendrapara',
-      block: 'Rajkanika',
+      district: district || 'Kendrapara',
+      block: block || 'Rajkanika',
       role: 'FARMER'
     });
     setLoading(false);
@@ -158,8 +264,8 @@ export const AuthPage = () => {
       otp: otpCode,
       name: name || 'Farmer',
       pincode: pincode || '754212',
-      district: 'Kendrapara',
-      block: 'Rajkanika'
+      district: district || 'Kendrapara',
+      block: block || 'Rajkanika'
     });
     setLoading(false);
 
@@ -339,22 +445,58 @@ export const AuthPage = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3 text-amber-400" />
-                    Area Pincode
-                  </span>
-                </label>
+              {/* Auto Location Detection */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-300">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-amber-400" />
+                      Area Pincode
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={fetchMyLocation}
+                    disabled={geoLoading}
+                    className="flex items-center gap-1 text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {geoLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <LocateFixed className="h-3 w-3" />
+                    )}
+                    {geoLoading ? 'Detecting...' : 'Detect Location'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={pincode}
-                  onChange={(e) => setPincode(e.target.value)}
+                  onChange={(e) => handlePincodeChange(e.target.value)}
                   placeholder="e.g. 754212"
                   maxLength={6}
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 />
+                {geoStatus && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <Crosshair className="h-3 w-3 flex-shrink-0" />
+                    <span>{geoStatus}</span>
+                  </div>
+                )}
               </div>
+
+              {/* Auto-filled District & Block (read-only display) */}
+              {(district || block) && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">District</div>
+                    <div className="text-xs font-semibold text-emerald-300 truncate">{district}</div>
+                  </div>
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Block</div>
+                    <div className="text-xs font-semibold text-amber-300 truncate">{block}</div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5">Password</label>
