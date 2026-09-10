@@ -77,9 +77,6 @@ export const Navbar = () => {
                 <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
                   MoES <span className="text-sky-400">•</span> NCMRWF
                 </span>
-                <span className="hidden md:inline-flex text-[10px] uppercase font-bold tracking-wider bg-sky-950/80 text-sky-300 border border-sky-800 px-1.5 py-0.5 rounded">
-                  SIH 2026
-                </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium truncate max-w-[200px] sm:max-w-none">
                 Hyperlocal Monsoon Onset & Break Intelligence System
