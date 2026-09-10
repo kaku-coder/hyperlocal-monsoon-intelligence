@@ -44,14 +44,51 @@ function getWMO(code, lang = 'en') {
   return { emoji: entry.emoji, label: entry[lang] || entry.en };
 }
 
+// 30 Odisha Districts Coordinates Lookup Master Table
+const ODISHA_DISTRICT_COORDS = {
+  'Angul': { lat: 20.8400, lon: 85.1000 },
+  'Balasore': { lat: 21.4934, lon: 86.9135 },
+  'Baleshwar': { lat: 21.4934, lon: 86.9135 },
+  'Bargarh': { lat: 21.3323, lon: 83.6200 },
+  'Bhadrak': { lat: 21.0575, lon: 86.4965 },
+  'Bolangir': { lat: 20.7088, lon: 83.4839 },
+  'Balangir': { lat: 20.7088, lon: 83.4839 },
+  'Boudh': { lat: 20.8407, lon: 84.3267 },
+  'Cuttack': { lat: 20.4625, lon: 85.8828 },
+  'Deogarh': { lat: 21.5348, lon: 84.7338 },
+  'Dhenkanal': { lat: 20.6625, lon: 85.5972 },
+  'Gajapati': { lat: 18.7758, lon: 84.0886 },
+  'Ganjam': { lat: 19.3150, lon: 84.7941 },
+  'Jagatsinghpur': { lat: 20.2678, lon: 86.1724 },
+  'Jajpur': { lat: 20.8500, lon: 86.3300 },
+  'Jharsuguda': { lat: 21.8574, lon: 84.0075 },
+  'Kalahandi': { lat: 19.9075, lon: 83.1659 },
+  'Kandhamal': { lat: 20.4735, lon: 84.2323 },
+  'Kendrapara': { lat: 20.5000, lon: 86.4200 },
+  'Keonjhar': { lat: 21.6289, lon: 85.5817 },
+  'Khordha': { lat: 20.2961, lon: 85.8245 },
+  'Koraput': { lat: 18.8135, lon: 82.7123 },
+  'Malkangiri': { lat: 18.3444, lon: 81.8845 },
+  'Mayurbhanj': { lat: 21.9333, lon: 86.7333 },
+  'Nabarangpur': { lat: 19.2312, lon: 82.5487 },
+  'Nayagarh': { lat: 20.1294, lon: 85.1054 },
+  'Nuapada': { lat: 20.8333, lon: 82.5333 },
+  'Puri': { lat: 19.8135, lon: 85.8312 },
+  'Rayagada': { lat: 19.1711, lon: 83.4163 },
+  'Sambalpur': { lat: 21.4669, lon: 83.9812 },
+  'Subarnapur': { lat: 20.8398, lon: 83.9168 },
+  'Sonepur': { lat: 20.8398, lon: 83.9168 },
+  'Sundargarh': { lat: 22.2604, lon: 84.8536 },
+};
+
 const NEARBY_BLOCKS = [
   { name: 'Bhubaneswar', district: 'Khordha', lat: 20.2961, lon: 85.8245 },
-  { name: 'Mencheswar', district: 'Khordha', lat: 20.3150, lon: 85.8450 },
+  { name: 'Balasore', district: 'Balasore', lat: 21.4934, lon: 86.9135 },
+  { name: 'Haladipada', district: 'Balasore', lat: 21.5600, lon: 86.9800 },
   { name: 'Cuttack', district: 'Cuttack', lat: 20.4625, lon: 85.8828 },
   { name: 'Puri', district: 'Puri', lat: 19.8135, lon: 85.8312 },
   { name: 'Rajkanika', district: 'Kendrapara', lat: 20.7300, lon: 86.6600 },
   { name: 'Jajpur', district: 'Jajpur', lat: 20.8500, lon: 86.3300 },
-  { name: 'Balasore', district: 'Balasore', lat: 21.4934, lon: 86.9135 },
   { name: 'Sambalpur', district: 'Sambalpur', lat: 21.4669, lon: 83.9812 },
   { name: 'Berhampur', district: 'Ganjam', lat: 19.3150, lon: 84.7941 },
   { name: 'Koraput', district: 'Koraput', lat: 18.8135, lon: 82.7123 },
@@ -70,9 +107,16 @@ export const RiskMapPage = () => {
   const [blockWeathers, setBlockWeathers] = useState({});
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mapStyle, setMapStyle] = useState('esri-satellite');
   const [showClouds, setShowClouds] = useState(true);
   const [radarTimestamp, setRadarTimestamp] = useState(null);
-  const [socketConnected, setSocketConnected] = useState(true);
+
+  const getTileUrl = (style) => {
+    if (style === 'esri-satellite') {
+      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    }
+    return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  };
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
   useEffect(() => {
@@ -126,43 +170,56 @@ export const RiskMapPage = () => {
     fetchBlockWeathers();
   }, []);
 
-  // Primary function to geocode and update location immediately on socket/navbar signal
+  // Fail-Safe Sync Function: Guarantees map centers on selected District/Block/Panchayat
   const syncMapLocation = useCallback(async (targetDistrict, targetBlock, targetPanchayat) => {
     const d = targetDistrict || selectedDistrict || 'Khordha';
     const b = targetBlock || selectedBlock || 'Bhubaneswar';
     const p = targetPanchayat || selectedPanchayat || '';
 
     setLoading(true);
-    setStatus(`Syncing ${b} ${p ? `(${p})` : ''}...`);
+    const displayName = p ? `${b} • ${p}` : b;
+    setStatus(`Syncing ${displayName}...`);
+
+    let finalLat = null;
+    let finalLon = null;
 
     try {
-      // 1. Try Geocoding exact Panchayat + Block + District
-      let query = p ? `${p}, ${b}, ${d}, Odisha, India` : `${b}, ${d}, Odisha, India`;
-      let res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
-      let data = await res.json();
+      // 1. Try Nominatim Geocoding for Panchayat or Block
+      const searchTerms = [
+        p ? `${p}, ${d}, Odisha, India` : null,
+        `${b}, ${d}, Odisha, India`,
+        `${d}, Odisha, India`
+      ].filter(Boolean);
 
-      // 2. Fallback to Block + District if Panchayat search yields no results
-      if (!data || !data.length) {
-        query = `${b}, ${d}, Odisha, India`;
-        res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
-        data = await res.json();
+      for (const query of searchTerms) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+          const data = await res.json();
+          if (data && data.length) {
+            finalLat = parseFloat(data[0].lat);
+            finalLon = parseFloat(data[0].lon);
+            break;
+          }
+        } catch (e) {
+          console.warn('Geocoding query error:', query, e);
+        }
       }
 
-      if (data && data.length) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
-        const displayName = p ? `${b} • ${p}` : b;
-        
-        setCoords({ lat, lon, name: displayName, country: d });
-        await fetchWeather(lat, lon);
-        setStatus(`📍 ${displayName}, ${d}`);
-      } else {
-        // Fallback default
-        setCoords({ lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', country: 'Khordha' });
-        await fetchWeather(20.2961, 85.8245);
+      // 2. District Coordinate Fallback (NEVER fall back to Bhubaneswar if user selected Balasore or another district!)
+      if (!finalLat || !finalLon) {
+        const districtLookup = ODISHA_DISTRICT_COORDS[d] || ODISHA_DISTRICT_COORDS[b] || ODISHA_DISTRICT_COORDS['Khordha'];
+        finalLat = districtLookup.lat;
+        finalLon = districtLookup.lon;
       }
+
+      setCoords({ lat: finalLat, lon: finalLon, name: displayName, country: d });
+      await fetchWeather(finalLat, finalLon);
+      setStatus(`📍 ${displayName}, ${d}`);
     } catch (err) {
-      console.warn('Location sync failed:', err);
+      console.warn('Location sync error:', err);
+      const fallback = ODISHA_DISTRICT_COORDS[d] || ODISHA_DISTRICT_COORDS['Khordha'];
+      setCoords({ lat: fallback.lat, lon: fallback.lon, name: displayName, country: d });
+      await fetchWeather(fallback.lat, fallback.lon);
     }
     setLoading(false);
   }, [selectedDistrict, selectedBlock, selectedPanchayat, fetchWeather]);
@@ -170,7 +227,6 @@ export const RiskMapPage = () => {
   // Subscribe to real-time socket / event bus for IMMEDIATE map refresh when Navbar location changes
   useEffect(() => {
     const unsubscribe = locationSocket.subscribe((detail) => {
-      setSocketConnected(true);
       syncMapLocation(detail.district, detail.block, detail.panchayat);
     });
 
@@ -266,7 +322,7 @@ export const RiskMapPage = () => {
           </button>
         </form>
 
-        {/* Right: Live Cloud Radar & Real-Time Socket Indicator */}
+        {/* Right: Layer Switcher, Cloud Radar & Real-Time Socket Indicator */}
         <div className="pointer-events-auto flex flex-wrap items-center gap-2">
           
           {/* Socket Live Sync Badge */}
@@ -292,6 +348,26 @@ export const RiskMapPage = () => {
             <span>☁️ {showClouds ? 'Clouds Radar ON' : 'Clouds Radar OFF'}</span>
           </button>
 
+          {/* Map Layer Switcher */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 p-1 rounded-2xl shadow-2xl flex items-center text-xs">
+            <button
+              onClick={() => setMapStyle('esri-satellite')}
+              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                mapStyle === 'esri-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🌍 Satellite HD
+            </button>
+            <button
+              onClick={() => setMapStyle('osm-street')}
+              className={`px-2.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                mapStyle === 'osm-street' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🗺️ Street Map
+            </button>
+          </div>
+
           {coords && (
             <div className="bg-slate-900/95 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-2xl shadow-2xl flex items-center gap-2">
               <LocateFixed className="h-4 w-4 text-cyan-400 animate-pulse" />
@@ -314,10 +390,11 @@ export const RiskMapPage = () => {
       >
         <MapRecenter center={coords ? [coords.lat, coords.lon] : null} />
 
-        {/* Clean, Fast & High Contrast Vector Tile Layer */}
+        {/* Clean, Watermark-Free Tile Layer */}
         <TileLayer
-          attribution='&copy; CartoDB &copy; OpenStreetMap | MoES NCMRWF'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; ESRI &copy; OpenStreetMap | MoES NCMRWF'
+          url={getTileUrl(mapStyle)}
+          maxZoom={19}
         />
 
         {/* Real-time Weather Cloud & Rain Radar Tile Overlay Layer */}
