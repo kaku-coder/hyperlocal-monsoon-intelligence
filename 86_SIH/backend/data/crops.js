@@ -315,7 +315,8 @@ const generateCropAdvisory = (cropId, metrics, locationName = "Rajkanika") => {
   };
 };
 
-module.exports = {
+export {
   crops,
   generateCropAdvisory
 };
+

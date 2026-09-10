@@ -107,8 +107,9 @@ const sendSimulatedNotification = (payload) => {
   return newRecord;
 };
 
-module.exports = {
+export {
   notificationLogs,
   getNotificationStats,
   sendSimulatedNotification
 };
+

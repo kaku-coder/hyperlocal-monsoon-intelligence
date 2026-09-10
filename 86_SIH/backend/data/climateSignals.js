@@ -72,4 +72,5 @@ const climateSignals = {
   ]
 };
 
-module.exports = climateSignals;
+export default climateSignals;
+

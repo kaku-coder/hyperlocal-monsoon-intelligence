@@ -2,14 +2,15 @@
  * Unified Controllers for Monsoon Intelligence API
  */
 
-const { locations, getDistricts, getBlocksByDistrict, getLocationById, findLocation } = require("../data/locations");
-const { crops, generateCropAdvisory } = require("../data/crops");
-const climateSignals = require("../data/climateSignals");
-const historicalData = require("../data/historical");
-const { getOdishaGeoJSON } = require("../data/geoJson");
-const { officerAlerts, getAlerts, acknowledgeAlert } = require("../data/alerts");
-const { notificationLogs, getNotificationStats, sendSimulatedNotification } = require("../data/notifications");
-const { predictWithML, explainWithML } = require("../services/mlService");
+import { locations, getDistricts, getBlocksByDistrict, getLocationById, findLocation } from "../data/locations.js";
+import { crops, generateCropAdvisory } from "../data/crops.js";
+import climateSignals from "../data/climateSignals.js";
+import historicalData from "../data/historical.js";
+import { getOdishaGeoJSON } from "../data/geoJson.js";
+import { officerAlerts, getAlerts, acknowledgeAlert } from "../data/alerts.js";
+import { notificationLogs, getNotificationStats, sendSimulatedNotification } from "../data/notifications.js";
+import { predictWithML, explainWithML } from "../services/mlService.js";
+
 
 // 1. Locations
 const getAllLocations = (req, res) => {
@@ -243,7 +244,7 @@ const getSystemStatus = (req, res) => {
   });
 };
 
-module.exports = {
+export {
   getAllLocations,
   getDistrictsList,
   getBlocksForDistrict,
@@ -262,3 +263,4 @@ module.exports = {
   postSendNotification,
   getSystemStatus
 };
+

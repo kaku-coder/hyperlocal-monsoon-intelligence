@@ -680,10 +680,11 @@ const findLocation = (district, block) => {
   return match || locations[0]; // defaults to Rajkanika
 };
 
-module.exports = {
+export {
   locations,
   getDistricts,
   getBlocksByDistrict,
   getLocationById,
   findLocation
 };
+

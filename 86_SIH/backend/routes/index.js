@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
+import * as controllers from "../controllers/index.js";
+
 const router = express.Router();
-const controllers = require("../controllers");
 
 // Locations
 router.get("/locations", controllers.getAllLocations);
@@ -37,4 +38,5 @@ router.post("/notifications/send", controllers.postSendNotification);
 // System Status
 router.get("/system-status", controllers.getSystemStatus);
 
-module.exports = router;
+export default router;
+

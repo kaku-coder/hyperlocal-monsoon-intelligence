@@ -29,7 +29,7 @@ export const fetchDistricts = async () => {
     console.warn("Using fallback districts", err);
   }
   return [
-    "Balasore", "Bhadrak", "Cuttack", "Ganjam", "Jagatsinghpur", 
+    "Balasore", "Bhadrak", "Cuttack", "Ganjam", "Jagatsinghpur",
     "Jajpur", "Kendrapara", "Khordha", "Mayurbhanj", "Puri"
   ];
 };

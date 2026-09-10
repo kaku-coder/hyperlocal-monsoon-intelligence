@@ -148,4 +148,6 @@ const Schemas = {
   }
 };
 
-module.exports = Schemas;
+export { Schemas };
+export default Schemas;
+

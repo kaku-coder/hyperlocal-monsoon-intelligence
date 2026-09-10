@@ -3,7 +3,7 @@
  * With graceful deterministic fallback to ensure 100% prototype uptime.
  */
 
-const { findLocation } = require("../data/locations");
+import { findLocation } from "../data/locations.js";
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8008";
 
@@ -134,7 +134,8 @@ const explainWithML = async (requestPayload) => {
   };
 };
 
-module.exports = {
+export {
   predictWithML,
   explainWithML
 };
+

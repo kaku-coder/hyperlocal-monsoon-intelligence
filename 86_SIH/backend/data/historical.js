@@ -88,4 +88,5 @@ const historicalData = {
   ]
 };
 
-module.exports = historicalData;
+export default historicalData;
+

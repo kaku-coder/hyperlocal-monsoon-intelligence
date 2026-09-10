@@ -4,7 +4,7 @@
  * Structured so production shapefiles/GeoJSON can be directly swapped in.
  */
 
-const { locations } = require("./locations");
+import { locations } from "./locations.js";
 
 // Function to generate a realistic polygon around a centroid coordinate
 function generatePolygon(lat, lon, size = 0.12, noise = 0.03) {
@@ -136,6 +136,7 @@ const getOdishaGeoJSON = (activeLayer = "break_risk") => {
   };
 };
 
-module.exports = {
+export {
   getOdishaGeoJSON
 };
+

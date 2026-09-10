@@ -77,8 +77,9 @@ const acknowledgeAlert = (alertId) => {
   return null;
 };
 
-module.exports = {
+export {
   officerAlerts,
   getAlerts,
   acknowledgeAlert
 };
+
