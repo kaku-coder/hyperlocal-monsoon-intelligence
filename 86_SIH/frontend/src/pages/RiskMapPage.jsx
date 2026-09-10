@@ -379,36 +379,34 @@ export const RiskMapPage = () => {
               symbol = '🌦️';
             }
 
-            const color = feat.properties.riskColor || '#38bdf8';
-            const size = isSelected ? 34 : 26;
-            const fontSize = isSelected ? 17 : 13;
-
             const iconHtml = `
               <div style="
-                background: ${color};
-                border: 2px solid #ffffff;
-                border-radius: 9999px;
+                background: rgba(15, 23, 42, 0.92);
+                backdrop-filter: blur(8px);
+                border: 1.5px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.2)'};
+                border-left: 4px solid ${color};
+                border-radius: 10px;
+                padding: 4px 9px;
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                width: ${size}px;
-                height: ${size}px;
-                box-shadow: 0 0 12px ${color}, 0 2px 8px rgba(0,0,0,0.6);
-                font-size: ${fontSize}px;
+                gap: 6px;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.7), 0 0 10px ${color}50;
+                font-family: system-ui, -apple-system, sans-serif;
                 cursor: pointer;
-                line-height: 1;
-                transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
-                transition: transform 0.2s ease;
+                white-space: nowrap;
+                transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
+                transition: all 0.2s ease;
               ">
-                ${symbol}
+                <span style="font-size: ${isSelected ? '16px' : '14px'}; line-height: 1;">${symbol}</span>
+                <span style="color: ${isSelected ? '#38bdf8' : '#f8fafc'}; font-size: 11px; font-weight: 800; letter-spacing: 0.2px;">${feat.properties.block}</span>
               </div>
             `;
 
             const customMarkerIcon = L.divIcon({
               html: iconHtml,
               className: 'custom-weather-marker-badge',
-              iconSize: [size, size],
-              iconAnchor: [size / 2, size / 2]
+              iconSize: [120, 32],
+              iconAnchor: [60, 16]
             });
 
             return (
