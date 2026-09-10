@@ -3,7 +3,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { Footer } from './components/layout/Footer';
-import { PrototypeBanner } from './components/common/PrototypeBanner';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -56,7 +55,6 @@ function AppContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 font-sans">
-      <PrototypeBanner />
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden">
