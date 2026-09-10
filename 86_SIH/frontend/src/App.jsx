@@ -17,6 +17,7 @@ import { NotificationCenterPage } from './pages/NotificationCenterPage';
 import { HistoricalPage } from './pages/HistoricalPage';
 import { ExplainabilityPage } from './pages/ExplainabilityPage';
 import { SystemStatusPage } from './pages/SystemStatusPage';
+import { AuthPage } from './pages/AuthPage';
 
 function AppContent() {
   const { activeTab } = useApp();
@@ -46,6 +47,8 @@ function AppContent() {
         return <ExplainabilityPage />;
       case 'system-status':
         return <SystemStatusPage />;
+      case 'auth':
+        return <AuthPage />;
       default:
         return <CommandCenter />;
     }

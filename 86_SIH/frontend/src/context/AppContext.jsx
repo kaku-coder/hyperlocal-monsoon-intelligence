@@ -12,7 +12,6 @@ export const AppProvider = ({ children }) => {
   // User Auth State
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('moes_jwt_token') || null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Location Hierarchy State (Default: Odisha -> Kendrapara -> Rajkanika)
   const [selectedState, setSelectedState] = useState('Odisha');
@@ -144,8 +143,6 @@ export const AppProvider = ({ children }) => {
         user,
         token,
         isLoggedIn: !!user,
-        isAuthModalOpen,
-        setIsAuthModalOpen,
         loginUserSession,
         logoutUserSession,
         selectedState,

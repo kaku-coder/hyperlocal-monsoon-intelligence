@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import AuthModal from '../auth/AuthModal';
 import { 
   CloudRain, 
   MapPin, 
@@ -9,7 +8,6 @@ import {
   Bell, 
   ChevronRight,
   Activity,
-  UserCheck,
   User,
   LogOut,
   LogIn
@@ -23,8 +21,6 @@ export const Navbar = () => {
     setFarmerLanguage,
     user,
     isLoggedIn,
-    isAuthModalOpen,
-    setIsAuthModalOpen,
     logoutUserSession,
     selectedState,
     districts,
@@ -217,9 +213,6 @@ export const Navbar = () => {
                   {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <span className="max-w-[80px] sm:max-w-[120px] truncate">{user.name || user.phoneNumber}</span>
-                <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded font-mono uppercase font-bold">
-                  {user.role || 'FARMER'}
-                </span>
               </button>
 
               {/* Profile Dropdown */}
@@ -241,14 +234,14 @@ export const Navbar = () => {
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-950/60 font-semibold transition-colors cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Sign Out / Logout</span>
+                    <span>Sign Out</span>
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <button
-              onClick={() => setIsAuthModalOpen(true)}
+              onClick={() => setActiveTab('auth')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
             >
               <LogIn className="h-3.5 w-3.5" />
@@ -260,11 +253,6 @@ export const Navbar = () => {
 
       </div>
 
-      {/* Auth Modal Container */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
     </header>
   );
 };
