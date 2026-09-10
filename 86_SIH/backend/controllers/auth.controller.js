@@ -312,23 +312,23 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// 4. Login User (Password-Based)
+// 5. Login User (Name + Password)
 export const loginUser = async (req, res) => {
   try {
-    const { phoneNumber, password } = req.body;
+    const { name, password } = req.body;
 
-    if (!phoneNumber || !password) {
+    if (!name || !password) {
       return res.status(400).json({
         status: "error",
-        message: "Please provide both phone number and password."
+        message: "Please provide both name and password."
       });
     }
 
-    const user = await User.findOne({ phoneNumber });
+    const user = await User.findOne({ name });
     if (!user) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid phone number or password."
+        message: "Invalid name or password."
       });
     }
 
@@ -336,7 +336,7 @@ export const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid phone number or password."
+        message: "Invalid name or password."
       });
     }
 

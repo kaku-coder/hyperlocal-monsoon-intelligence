@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { mobileLoginApi, registerUserApi } from '../services/api';
+import { mobileLoginApi, registerUserApi, loginUserApi } from '../services/api';
 import {
   CloudRain,
   Smartphone,
@@ -58,6 +58,7 @@ export const AuthPage = () => {
 
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pincode, setPincode] = useState('');
   const [district, setDistrict] = useState('');
@@ -139,23 +140,18 @@ export const AuthPage = () => {
     setSuccessMsg('');
   };
 
-  const handleMobileLogin = async (e) => {
+  const handleNameLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!phoneNumber) {
-      setErrorMsg('Please enter your Mobile Number');
-      return;
-    }
-
-    if (phoneNumber.length < 10) {
-      setErrorMsg('Enter a valid 10-digit Mobile Number');
+    if (!name || !password) {
+      setErrorMsg('Please enter your Name and Password');
       return;
     }
 
     setLoading(true);
-    const res = await mobileLoginApi(phoneNumber);
+    const res = await loginUserApi(name, password);
     setLoading(false);
 
     if (res.status === 'success' && res.token) {
@@ -166,7 +162,7 @@ export const AuthPage = () => {
         setSelectedBlock(res.user.block);
       }
     } else {
-      setErrorMsg(res.message || 'Login failed. Please try again.');
+      setErrorMsg(res.message || 'Invalid name or password.');
     }
   };
 
@@ -272,31 +268,39 @@ export const AuthPage = () => {
             </div>
           )}
 
-          {/* SIGN IN — Mobile Number Only */}
+          {/* SIGN IN — Name + Password */}
           {mode === 'login' && (
-            <form onSubmit={handleMobileLogin} className="space-y-4">
+            <form onSubmit={handleNameLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Smartphone className="h-3 w-3 text-sky-400" />
-                    Enter your Mobile Number
-                  </span>
-                </label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  autoFocus
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Password</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">+91</span>
                   <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="9876543210"
-                    maxLength={10}
-                    autoFocus
-                    className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  Cloud & weather alerts will be sent to this number
-                </p>
               </div>
 
               <button
