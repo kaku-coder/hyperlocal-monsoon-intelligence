@@ -110,8 +110,8 @@ export const FarmerModePage = () => {
               🌾
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tight leading-tight flex items-center gap-1.5 font-odia">
-                {t.appTitle}
+              <h1 className="text-lg font-black tracking-tight leading-tight flex items-center gap-1.5 font-sans">
+                {t.appTitle || t.fmAppTitle || "Monsoon Saathi"}
               </h1>
               <p className="text-xs text-emerald-100 font-medium flex items-center gap-1 mt-0.5">
                 <MapPin className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" />
@@ -143,10 +143,10 @@ export const FarmerModePage = () => {
           
           <div className="rounded-2xl bg-slate-900 border border-slate-800 p-3 space-y-1 shadow-md">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              {t.rainfallStatus}
+              {t.rainfallStatus || t.fmRainfallStatus || "Rainfall Outlook"}
             </div>
-            <div className="text-sm font-black text-sky-300">
-              {m.expected_rainfall_mm} mm
+            <div className="text-sm font-black text-sky-300 font-sans">
+              {m.expected_rainfall_mm} <span className="text-[10px] font-medium text-slate-400">mm</span>
             </div>
             <div className="text-[10px] text-slate-500 font-semibold">
               {m.break_probability >= 0.60 ? 'Irregular' : 'Favorable'}
@@ -155,10 +155,10 @@ export const FarmerModePage = () => {
 
           <div className="rounded-2xl bg-orange-950/40 border border-orange-800/60 p-3 space-y-1 shadow-md">
             <div className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">
-              {t.sowingRisk}
+              {t.sowingRisk || t.fmSowingRisk || "Sowing Risk"}
             </div>
             <div className="text-sm font-black text-orange-300">
-              {m.break_probability >= 0.60 ? t.high : t.moderate}
+              {m.break_probability >= 0.60 ? (t.high || "High") : (t.moderate || "Moderate")}
             </div>
             <div className="text-[10px] text-orange-400/80 font-semibold">
               {m.break_probability >= 0.60 ? 'Caution' : 'Optimal'}
@@ -167,9 +167,9 @@ export const FarmerModePage = () => {
 
           <div className="rounded-2xl bg-rose-950/40 border border-rose-800/60 p-3 space-y-1 shadow-md">
             <div className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-              {t.drySpellRisk}
+              {t.drySpellRisk || t.fmDrySpellRisk || "Dry Spell Risk"}
             </div>
-            <div className="text-sm font-black text-rose-300">
+            <div className="text-sm font-black text-rose-300 font-sans">
               {Math.round(m.break_probability * 100)}%
             </div>
             <div className="text-[10px] text-rose-400/80 font-semibold">
@@ -185,7 +185,7 @@ export const FarmerModePage = () => {
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
               <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                {t.todayAdvice}
+                {t.todayAdvice || t.fmTodayAdvice || "Today's Advice"}
               </span>
             </div>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
@@ -193,7 +193,7 @@ export const FarmerModePage = () => {
             </span>
           </div>
 
-          <p className="text-sm sm:text-base font-bold text-white leading-relaxed font-odia">
+          <p className="text-sm sm:text-base font-bold text-white leading-relaxed font-sans">
             {getTodayAdviceText()}
           </p>
 
@@ -204,7 +204,7 @@ export const FarmerModePage = () => {
               className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg bg-yellow-600 hover:bg-yellow-500 text-white"
             >
               <Volume2 className="h-4 w-4" />
-              <span>{farmerLanguage === 'hi' ? 'पुनः प्रयास' : farmerLanguage === 'or' ? 'ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ' : 'Retry Voice'}</span>
+              <span>{farmerLanguage === 'hi' ? 'पुनः प्रयास (Voice Retry)' : farmerLanguage === 'or' ? 'ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ (Voice Retry)' : 'Retry Voice Readout'}</span>
             </button>
           ) : (
             <button
@@ -216,7 +216,11 @@ export const FarmerModePage = () => {
               }`}
             >
               {isPlayingAudio ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              <span>{isPlayingAudio ? t.audioPlaying : t.audioListen}</span>
+              <span>
+                {isPlayingAudio
+                  ? (t.audioPlaying || t.fmAudioPlaying || "Playing Audio...")
+                  : (t.audioListen || t.fmAudioListen || "Listen to Voice Advice")}
+              </span>
             </button>
           )}
         </div>
@@ -230,7 +234,7 @@ export const FarmerModePage = () => {
             className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left hover:border-slate-700 transition-all cursor-pointer"
           >
             <div>
-              <div className="text-[10px] text-slate-400 uppercase font-bold">{t.myCrop}</div>
+              <div className="text-[10px] text-slate-400 uppercase font-bold">{t.myCrop || t.fmMyCrop || "My Crop"}</div>
               <div className="text-xs font-bold text-white truncate">
                 {t[selectedCrop] || selectedCrop}
               </div>
@@ -244,7 +248,7 @@ export const FarmerModePage = () => {
             className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left hover:border-slate-700 transition-all cursor-pointer"
           >
             <div>
-              <div className="text-[10px] text-slate-400 uppercase font-bold">{t.forecast7d}</div>
+              <div className="text-[10px] text-slate-400 uppercase font-bold">{t.forecast7d || t.fmForecast7d || "7-Day Outlook"}</div>
               <div className="text-xs font-bold text-sky-400">
                 {m.expected_rainfall_mm} mm Rain
               </div>
@@ -284,10 +288,10 @@ export const FarmerModePage = () => {
         <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
           <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
             <span>7-Day Rainfall Forecast Strip</span>
-            <span className="text-[10px] text-sky-400 font-mono">Rajkanika</span>
+            <span className="text-[10px] text-sky-400 font-sans font-semibold">{selectedBlock}</span>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center font-mono">
+          <div className="grid grid-cols-7 gap-1 text-center font-sans">
             {[
               { d: "Thu", rain: 14, icon: "🌧️" },
               { d: "Fri", rain: 18, icon: "🌧️" },
@@ -298,10 +302,10 @@ export const FarmerModePage = () => {
               { d: "Wed", rain: 0, icon: "☀️" }
             ].map((day, idx) => (
               <div key={idx} className="p-1.5 rounded-lg bg-slate-950 border border-slate-800/80">
-                <div className="text-[9px] font-sans text-slate-400">{day.d}</div>
+                <div className="text-[9px] font-sans text-slate-400 font-medium">{day.d}</div>
                 <div className="text-sm my-0.5">{day.icon}</div>
-                <div className={`text-[10px] font-bold ${day.rain > 0 ? 'text-sky-300' : 'text-slate-500'}`}>
-                  {day.rain}mm
+                <div className={`text-[10px] font-black ${day.rain > 0 ? 'text-sky-300' : 'text-slate-500'}`}>
+                  {day.rain}<span className="text-[9px] font-medium text-slate-400 ml-0.5">mm</span>
                 </div>
               </div>
             ))}
@@ -315,11 +319,11 @@ export const FarmerModePage = () => {
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-amber-300 transition-colors shadow-md"
           >
             <PhoneCall className="h-4 w-4 text-amber-400" />
-            <span>{t.callKisanHelpline}</span>
+            <span>{t.callKisanHelpline || t.fmCallHelpline || "Call Kisan Helpline (1800-180-1551)"}</span>
           </a>
 
           <p className="text-[10px] text-center text-slate-500 leading-tight">
-            {t.disclaimer} • Prototype Decision Support
+            {t.disclaimer || "Official MoES/IMD Data Stream"} • Prototype Decision Support
           </p>
         </div>
 

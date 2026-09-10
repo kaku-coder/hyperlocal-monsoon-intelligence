@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchCrops, generateAdvisory } from '../services/api';
 import { SpeakButton } from '../components/common/SpeakButton';
+import { translations } from '../utils/localization';
 import { 
   Sprout, 
   AlertTriangle, 
@@ -29,6 +30,8 @@ export const CropAdvisoryPage = () => {
     setActiveTab
   } = useApp();
 
+  const t = translations[farmerLanguage] || translations.en;
+
   const [cropsList, setCropsList] = useState([]);
   const [advisory, setAdvisory] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -53,7 +56,6 @@ export const CropAdvisoryPage = () => {
 
   const activeCropObj = cropsList.find(c => c.id === selectedCrop) || cropsList[0];
 
-  // Helper to choose localized string
   const getLocalized = (obj) => {
     if (!obj) return "";
     return obj[farmerLanguage] || obj.en || "";
@@ -64,6 +66,8 @@ export const CropAdvisoryPage = () => {
     return obj[farmerLanguage] || obj.en || [];
   };
 
+  const cropEmojis = { rice: '🌾', maize: '🌽', groundnut: '🥜', pulses: '🌱', vegetables: '🥦' };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
       
@@ -73,22 +77,22 @@ export const CropAdvisoryPage = () => {
           <div className="flex items-center gap-2">
             <Sprout className="h-6 w-6 text-emerald-400" />
             <h1 className="text-xl sm:text-2xl font-black text-white">
-              Agricultural Crop Advisory Engine
+              {t.navAdvisory}
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Automated agro-meteorological decision-support rules for Kharif sowing & crop protection
+            {t.landingAdvisoryDesc}
           </p>
         </div>
         <div className="text-xs text-slate-400 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 self-start sm:self-auto font-mono">
-          Location: <strong className="text-amber-300">{selectedBlock}</strong> ({selectedDistrict})
+          {t.fmLocation}: <strong className="text-amber-300">{selectedBlock}</strong> ({selectedDistrict})
         </div>
       </div>
 
       {/* Crop Selector Chips */}
       <div className="space-y-2">
         <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Select Target Kharif Crop:
+          {t.cmdTargetCrop}:
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
           {cropsList.map((crop) => {
@@ -105,7 +109,7 @@ export const CropAdvisoryPage = () => {
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-lg">
-                    {crop.id === 'rice' ? '🌾' : crop.id === 'maize' ? '🌽' : crop.id === 'groundnut' ? '🥜' : crop.id === 'pulses' ? '🌱' : crop.id === 'vegetables' ? '🥦' : '🪴'}
+                    {cropEmojis[crop.id] || '🪴'}
                   </span>
                   {isSelected && <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />}
                 </div>
@@ -133,7 +137,7 @@ export const CropAdvisoryPage = () => {
                 {advisory.advisoryType}
               </span>
               <span className="text-xs font-semibold text-slate-400">
-                Crop: <strong className="text-slate-200">{activeCropObj?.name_en || activeCropObj?.name}</strong>
+                {t.fmMyCrop}: <strong className="text-slate-200">{activeCropObj?.name_en || activeCropObj?.name}</strong>
               </span>
             </div>
 
@@ -150,14 +154,14 @@ export const CropAdvisoryPage = () => {
               {getLocalized(advisory.title)}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Evaluated against 14-day rainfall anomaly, soil moisture, and intra-seasonal dry-spell probabilities.
+              {t.cmdDeparture}
             </p>
           </div>
 
           {/* Action Bullet Points */}
           <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" /> Recommended Agro-Operations for Farmers:
+              <CheckCircle2 className="h-4 w-4" /> {t.cmdAdvisoryActive}:
             </h3>
 
             <ul className="space-y-2.5 text-xs text-slate-200">
@@ -175,7 +179,7 @@ export const CropAdvisoryPage = () => {
           {/* "Why this Recommendation?" Trigger Section */}
           <div className="rounded-xl bg-orange-950/20 border border-orange-800/40 p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
-              <HelpCircle className="h-4 w-4" /> Why this Recommendation? (Trigger Variables):
+              <HelpCircle className="h-4 w-4" /> {t.cmdQ2}:
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -192,19 +196,19 @@ export const CropAdvisoryPage = () => {
           {activeCropObj && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
               <div>
-                <span className="text-[10px] text-slate-400 block">Water Requirement</span>
-                <strong className="text-white font-mono">{activeCropObj.optimal_rainfall_mm} mm</strong>
+                <span className="text-[10px] text-slate-400 block">{t.cmdExpectedRain}</span>
+                <strong className="text-white font-mono">{activeCropObj.optimal_rainfall_mm} {t.mm}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 block">Drought Sensitivity</span>
+                <span className="text-[10px] text-slate-400 block">{t.cmdRainAnomaly}</span>
                 <strong className="text-orange-400">{activeCropObj.drought_sensitivity}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 block">Waterlogging Sensitivity</span>
+                <span className="text-[10px] text-slate-400 block">{t.cmdHeavyRain}</span>
                 <strong className="text-cyan-400">{activeCropObj.heavy_rain_sensitivity}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 block">Sowing Window</span>
+                <span className="text-[10px] text-slate-400 block">{t.cmdHorizon}</span>
                 <strong className="text-emerald-400">{activeCropObj.sowing_window}</strong>
               </div>
             </div>
@@ -216,13 +220,14 @@ export const CropAdvisoryPage = () => {
               <SpeakButton
                 text={getLocalized(advisory.title) + '. ' + getLocalizedArray(advisory.actionPoints).join('. ')}
                 lang={farmerLanguage}
+                t={t}
               />
 
               <button
                 onClick={() => setActiveTab('farmer-mode')}
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
               >
-                <span>Preview in Farmer Mode (Monsoon Saathi)</span>
+                <span>{t.fmAppTitle}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
 
@@ -231,12 +236,12 @@ export const CropAdvisoryPage = () => {
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer"
               >
                 <Send className="h-3.5 w-3.5 text-sky-400" />
-                <span>Broadcast to Block Farmers</span>
+                <span>{t.cmdBroadcast}</span>
               </button>
             </div>
 
             <span className="text-[11px] text-slate-500 font-mono">
-              Certified by MoES / NCMRWF Agricultural Decision Matrix
+              {t.footerLeft}
             </span>
           </div>
 

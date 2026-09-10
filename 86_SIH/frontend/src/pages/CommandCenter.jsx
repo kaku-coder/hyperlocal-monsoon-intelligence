@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { SpeakButton } from '../components/common/SpeakButton';
+import { translations } from '../utils/localization';
 import { 
   CloudRain, 
   SunMedium, 
@@ -35,6 +36,7 @@ export const CommandCenter = () => {
     farmerLanguage
   } = useApp();
 
+  const t = translations[farmerLanguage] || translations.en;
   const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
@@ -74,25 +76,25 @@ export const CommandCenter = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Monsoon Command Center
+              {t.cmdTitle}
             </h1>
             <span className="bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-              Operational View
+              {t.cmdBadge}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 text-sky-400" />
             <span className="font-semibold text-slate-300">{selectedState}</span> → 
-            <span className="font-semibold text-slate-300">{selectedDistrict} District</span> → 
-            <span className="font-bold text-amber-300">{selectedBlock} Block</span>
+            <span className="font-semibold text-slate-300">{selectedDistrict} {t.district}</span> → 
+            <span className="font-bold text-amber-300">{selectedBlock} {t.block}</span>
             {selectedPanchayat && <span className="text-slate-400">({selectedPanchayat} GP)</span>}
           </p>
         </div>
 
-        {/* Forecast Horizon Selector (7, 14, 21, 30 days) */}
+        {/* Forecast Horizon Selector */}
         <div className="flex items-center gap-2 self-start md:self-auto bg-slate-950 p-1 rounded-xl border border-slate-800">
           <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
-            <Calendar className="h-3 w-3 text-sky-400" /> Horizon:
+            <Calendar className="h-3 w-3 text-sky-400" /> {t.cmdHorizon}:
           </span>
           {[7, 14, 21, 30].map(h => (
             <button
@@ -104,7 +106,7 @@ export const CommandCenter = () => {
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
               }`}
             >
-              {h} Days
+              {h} {t.days}
             </button>
           ))}
         </div>
@@ -117,7 +119,7 @@ export const CommandCenter = () => {
         <div className="relative rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-5 shadow-lg space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Monsoon Onset
+              {t.cmdOnset}
             </span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <CloudRain className="h-4 w-4" />
@@ -129,7 +131,7 @@ export const CommandCenter = () => {
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-emerald-400">
-                {m.onset_probability >= 0.70 ? 'Favorable Progression' : 'Moderate Window'}
+                {m.onset_probability >= 0.70 ? t.cmdFavorable : t.cmdModerateWindow}
               </span>
               <RiskBadge probability={m.onset_probability} customLabel="ONSET PROB" size="sm" />
             </div>
@@ -146,7 +148,7 @@ export const CommandCenter = () => {
         <div className="relative rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-5 shadow-lg space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Break / Dry Spell
+              {t.cmdBreak}
             </span>
             <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
               <SunMedium className="h-4 w-4" />
@@ -158,7 +160,7 @@ export const CommandCenter = () => {
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-orange-300">
-                {m.break_probability >= 0.60 ? 'Elevated Break Risk' : 'Low Dry Spell Risk'}
+                {m.break_probability >= 0.60 ? t.cmdElevated : t.cmdLowDry}
               </span>
               <RiskBadge probability={m.break_probability} size="sm" />
             </div>
@@ -175,7 +177,7 @@ export const CommandCenter = () => {
         <div className="relative rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-5 shadow-lg space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Heavy Rain (&gt;65mm)
+              {t.cmdHeavyRain}
             </span>
             <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Droplets className="h-4 w-4" />
@@ -187,7 +189,7 @@ export const CommandCenter = () => {
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-cyan-300">
-                {m.heavy_rain_probability >= 0.50 ? 'High Inundation Watch' : 'Moderate Convection'}
+                {m.heavy_rain_probability >= 0.50 ? t.cmdHighInundation : t.cmdModConvection}
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                 {m.heavy_rain_probability >= 0.50 ? 'HIGH' : 'MODERATE'}
@@ -206,7 +208,7 @@ export const CommandCenter = () => {
         <div className="relative rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-5 shadow-lg space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Forecast Confidence
+              {t.cmdConfidence}
             </span>
             <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
               <CheckCircle2 className="h-4 w-4" />
@@ -218,10 +220,10 @@ export const CommandCenter = () => {
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-300">
-                Coupled Model Consensus
+                {t.cmdCoupledModel}
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                HIGH CONF
+                {t.cmdHighConf}
               </span>
             </div>
           </div>
@@ -240,49 +242,49 @@ export const CommandCenter = () => {
         
         <div className="rounded-xl bg-slate-900/60 border border-slate-800/80 p-3.5 space-y-1">
           <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-            <Droplets className="h-3.5 w-3.5 text-sky-400" /> Expected Rainfall ({forecastHorizon}d)
+            <Droplets className="h-3.5 w-3.5 text-sky-400" /> {t.cmdExpectedRain} ({forecastHorizon}{t.days})
           </div>
           <div className="text-lg font-bold text-white font-mono">
-            {m.expected_rainfall_mm} <span className="text-xs text-slate-400 font-normal">mm</span>
+            {m.expected_rainfall_mm} <span className="text-xs text-slate-400 font-normal">{t.mm}</span>
           </div>
           <p className="text-[10px] text-slate-500">
-            Climatological Normal: {forecastHorizon === 7 ? 55 : forecastHorizon === 14 ? 110 : forecastHorizon === 21 ? 165 : 240} mm
+            {t.cmdClimatNormal}: {forecastHorizon === 7 ? 55 : forecastHorizon === 14 ? 110 : forecastHorizon === 21 ? 165 : 240} {t.mm}
           </p>
         </div>
 
         <div className="rounded-xl bg-slate-900/60 border border-slate-800/80 p-3.5 space-y-1">
           <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-            <CloudRain className="h-3.5 w-3.5 text-rose-400" /> Rainfall Anomaly
+            <CloudRain className="h-3.5 w-3.5 text-rose-400" /> {t.cmdRainAnomaly}
           </div>
           <div className={`text-lg font-bold font-mono ${m.rainfall_anomaly_percent < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
             {m.rainfall_anomaly_percent > 0 ? `+${m.rainfall_anomaly_percent}` : m.rainfall_anomaly_percent}%
           </div>
           <p className="text-[10px] text-slate-500">
-            Departure from 30-yr IMD normal
+            {t.cmdDeparture}
           </p>
         </div>
 
         <div className="rounded-xl bg-slate-900/60 border border-slate-800/80 p-3.5 space-y-1">
           <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-            <Sprout className="h-3.5 w-3.5 text-amber-400" /> Topsoil Moisture
+            <Sprout className="h-3.5 w-3.5 text-amber-400" /> {t.cmdSoilMoisture}
           </div>
           <div className="text-lg font-bold text-amber-300 font-mono">
             {m.soil_moisture_level} <span className="text-xs text-slate-400 font-normal">({(m.soil_moisture_fraction * 100).toFixed(0)}% VWC)</span>
           </div>
           <p className="text-[10px] text-slate-500">
-            Root-zone moisture buffer
+            {t.cmdRootZone}
           </p>
         </div>
 
         <div className="rounded-xl bg-slate-900/60 border border-slate-800/80 p-3.5 space-y-1">
           <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-            <Thermometer className="h-3.5 w-3.5 text-orange-400" /> Surface Temperature
+            <Thermometer className="h-3.5 w-3.5 text-orange-400" /> {t.cmdSurfaceTemp}
           </div>
           <div className="text-lg font-bold text-white font-mono">
             {m.temperature_c}°C <span className="text-xs text-orange-400 font-semibold">(+{m.temperature_anomaly}°C)</span>
           </div>
           <p className="text-[10px] text-slate-500">
-            Accelerated evapotranspiration
+            {t.cmdEvap}
           </p>
         </div>
 
@@ -294,47 +296,47 @@ export const CommandCenter = () => {
         {/* Left 2 Cols: Active Advisory Card & 3 Core Questions UI */}
         <div className="lg:col-span-2 space-y-4">
           
-          {/* Sowing Caution Banner (Default Scenario for Rajkanika Rice) */}
+          {/* Sowing Caution Banner */}
           <div className="rounded-2xl bg-gradient-to-r from-orange-950/70 via-slate-900 to-slate-900 border border-orange-500/40 p-6 space-y-4 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-orange-400 animate-ping" />
                 <span className="text-xs font-bold uppercase tracking-wider text-orange-300 bg-orange-500/20 px-2.5 py-1 rounded-md border border-orange-500/30">
-                  Agro-Meteorological Advisory Active
+                  {t.cmdAdvisoryActive}
                 </span>
               </div>
-              <span className="text-xs font-semibold text-slate-400">Target Crop: Rice (Paddy)</span>
+              <span className="text-xs font-semibold text-slate-400">{t.cmdTargetCrop}: {t.rice}</span>
             </div>
 
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-white">
-                Sowing Caution: Delay Rice Sowing by 5–7 Days in {selectedBlock}
+                {t.cmdSowingCaution} {selectedBlock}
               </h2>
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Break probability is elevated at <strong className="text-orange-300 font-mono">{Math.round(m.break_probability * 100)}%</strong> with <strong className="text-amber-300 font-mono">{m.soil_moisture_level}</strong> soil moisture. Avoid early dry-seeding without assured irrigation.
+                {t.cmdAdvisoryDesc}
               </p>
             </div>
 
             {/* 3 Core UX Principles Highlight */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400">1. What will happen?</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400">{t.cmdQ1}</div>
                 <div className="text-xs font-semibold text-slate-200">
-                  Dry spell of 7–10 days expected in week 2 ({forecastHorizon}d outlook).
+                  {t.cmdQ1A}
                 </div>
               </div>
 
               <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">2. Why this prediction?</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">{t.cmdQ2}</div>
                 <div className="text-xs font-semibold text-slate-200">
-                  Rainfall deficit (-24%) + Warm ENSO (+0.8) + Low soil water.
+                  {t.cmdQ2A}
                 </div>
               </div>
 
               <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">3. What should farmer do?</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">{t.cmdQ3}</div>
                 <div className="text-xs font-semibold text-slate-200">
-                  Delay transplanting 5-7 days & prepare backup irrigation ponds.
+                  {t.cmdQ3A}
                 </div>
               </div>
             </div>
@@ -342,8 +344,9 @@ export const CommandCenter = () => {
             {/* Quick Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <SpeakButton
-                text={`Sowing caution for ${selectedBlock}. Break probability is elevated. Delay rice sowing by 5 to 7 days. Rainfall deficit of 24 percent with warm ENSO conditions and low soil moisture. Prepare backup irrigation ponds.`}
+                text={`${t.cmdSowingCaution}. ${t.cmdQ2A} ${t.cmdQ3A}`}
                 lang={farmerLanguage}
+                t={t}
               />
 
               <button
@@ -351,7 +354,7 @@ export const CommandCenter = () => {
                 className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
               >
                 <Sprout className="h-4 w-4" />
-                <span>Open Full Crop Advisory Engine</span>
+                <span>{t.cmdOpenAdvisory}</span>
               </button>
 
               <button
@@ -359,7 +362,7 @@ export const CommandCenter = () => {
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition-all cursor-pointer"
               >
                 <HelpCircle className="h-4 w-4 text-indigo-400" />
-                <span>Why this prediction? (XAI)</span>
+                <span>{t.cmdWhyPrediction}</span>
               </button>
 
               <button
@@ -367,7 +370,7 @@ export const CommandCenter = () => {
                 className="flex items-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
               >
                 <Send className="h-3.5 w-3.5" />
-                <span>Broadcast SMS / WhatsApp</span>
+                <span>{t.cmdBroadcast}</span>
               </button>
             </div>
           </div>
@@ -377,13 +380,13 @@ export const CommandCenter = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-sky-400" />
-                <span>4-Week Multi-Period Progression Matrix</span>
+                <span>{t.cmdTimeline}</span>
               </h3>
               <button
                 onClick={() => setActiveTab('forecast')}
                 className="text-xs font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
               >
-                <span>Full Timeline Chart</span>
+                <span>{t.cmdFullTimeline}</span>
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -392,46 +395,46 @@ export const CommandCenter = () => {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 font-semibold">
-                    <th className="pb-2">Period Horizon</th>
-                    <th className="pb-2 text-center">Onset Prob</th>
-                    <th className="pb-2 text-center">Break Risk</th>
-                    <th className="pb-2 text-center">Heavy Rain</th>
-                    <th className="pb-2 text-right">Expected Rain</th>
-                    <th className="pb-2 text-right">Status</th>
+                    <th className="pb-2">{t.cmdPeriod}</th>
+                    <th className="pb-2 text-center">{t.cmdOnsetProb}</th>
+                    <th className="pb-2 text-center">{t.cmdBreakRisk}</th>
+                    <th className="pb-2 text-center">{t.cmdHeavyRisk}</th>
+                    <th className="pb-2 text-right">{t.cmdExpectedRainTbl}</th>
+                    <th className="pb-2 text-right">{t.cmdStatus}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-mono">
                   <tr>
-                    <td className="py-2.5 font-sans font-bold text-slate-200">1–7 Days</td>
+                    <td className="py-2.5 font-sans font-bold text-slate-200">1–7 {t.days}</td>
                     <td className="py-2.5 text-center text-emerald-400 font-bold">76%</td>
                     <td className="py-2.5 text-center text-slate-300">18%</td>
                     <td className="py-2.5 text-center text-slate-300">29%</td>
-                    <td className="py-2.5 text-right text-sky-300 font-bold">54 mm</td>
-                    <td className="py-2.5 text-right font-sans text-emerald-400 font-semibold">Favorable Onset</td>
+                    <td className="py-2.5 text-right text-sky-300 font-bold">54 {t.mm}</td>
+                    <td className="py-2.5 text-right font-sans text-emerald-400 font-semibold">{t.cmdFavOnset}</td>
                   </tr>
                   <tr className="bg-orange-950/20">
-                    <td className="py-2.5 font-sans font-bold text-orange-300">8–14 Days</td>
+                    <td className="py-2.5 font-sans font-bold text-orange-300">8–14 {t.days}</td>
                     <td className="py-2.5 text-center text-slate-300">68%</td>
                     <td className="py-2.5 text-center text-orange-400 font-bold">68%</td>
                     <td className="py-2.5 text-center text-slate-300">38%</td>
-                    <td className="py-2.5 text-right text-orange-300 font-bold">38 mm</td>
-                    <td className="py-2.5 text-right font-sans text-orange-400 font-bold">Dry Break Spell</td>
+                    <td className="py-2.5 text-right text-orange-300 font-bold">38 {t.mm}</td>
+                    <td className="py-2.5 text-right font-sans text-orange-400 font-bold">{t.cmdDryBreak}</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 font-sans font-bold text-slate-200">15–21 Days</td>
+                    <td className="py-2.5 font-sans font-bold text-slate-200">15–21 {t.days}</td>
                     <td className="py-2.5 text-center text-slate-300">58%</td>
                     <td className="py-2.5 text-center text-amber-400 font-bold">52%</td>
                     <td className="py-2.5 text-center text-slate-300">24%</td>
-                    <td className="py-2.5 text-right text-sky-300 font-bold">29 mm</td>
-                    <td className="py-2.5 text-right font-sans text-amber-400 font-semibold">Moderate Stress</td>
+                    <td className="py-2.5 text-right text-sky-300 font-bold">29 {t.mm}</td>
+                    <td className="py-2.5 text-right font-sans text-amber-400 font-semibold">{t.cmdModStress}</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 font-sans font-bold text-slate-200">22–30 Days</td>
+                    <td className="py-2.5 font-sans font-bold text-slate-200">22–30 {t.days}</td>
                     <td className="py-2.5 text-center text-slate-300">52%</td>
                     <td className="py-2.5 text-center text-slate-300">32%</td>
                     <td className="py-2.5 text-center text-cyan-400 font-bold">42%</td>
-                    <td className="py-2.5 text-right text-sky-300 font-bold">42 mm</td>
-                    <td className="py-2.5 text-right font-sans text-sky-400 font-semibold">Monsoon Recovery</td>
+                    <td className="py-2.5 text-right text-sky-300 font-bold">42 {t.mm}</td>
+                    <td className="py-2.5 text-right font-sans text-sky-400 font-semibold">{t.cmdMonsoonRecovery}</td>
                   </tr>
                 </tbody>
               </table>
@@ -446,10 +449,10 @@ export const CommandCenter = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <h3 className="text-sm font-bold text-white">Officer Alerts Feed</h3>
+                <h3 className="text-sm font-bold text-white">{t.cmdAlertsFeed}</h3>
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                {alerts.filter(a => a.status === 'ACTIVE').length} Active
+                {alerts.filter(a => a.status === 'ACTIVE').length} {t.cmdActive}
               </span>
             </div>
 
@@ -485,11 +488,11 @@ export const CommandCenter = () => {
                         onClick={() => handleAck(alert.id)}
                         className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer"
                       >
-                        Acknowledge
+                        {t.cmdAcknowledge}
                       </button>
                     ) : (
                       <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Acknowledged
+                        <CheckCircle2 className="h-3 w-3" /> {t.cmdAcknowledged}
                       </span>
                     )}
                   </div>
@@ -505,8 +508,8 @@ export const CommandCenter = () => {
               <div className="flex items-center gap-2.5">
                 <Layers className="h-5 w-5 text-sky-400 group-hover:scale-110 transition-transform" />
                 <div>
-                  <div className="text-xs font-bold text-white">Interactive GIS Risk Map</div>
-                  <div className="text-[11px] text-slate-400">View Odisha Block Polygons</div>
+                  <div className="text-xs font-bold text-white">{t.cmdGISMap}</div>
+                  <div className="text-[11px] text-slate-400">{t.cmdGISDesc}</div>
                 </div>
               </div>
               <ArrowUpRight className="h-4 w-4 text-sky-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
