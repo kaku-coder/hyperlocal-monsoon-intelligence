@@ -30,6 +30,24 @@ export const AppProvider = ({ children }) => {
   // Selected Crop for Advisory (Default: Rice)
   const [selectedCrop, setSelectedCrop] = useState('rice');
 
+  // Map Location State (persisted in localStorage)
+  const getSavedMapLocation = () => {
+    try {
+      const saved = localStorage.getItem('moes_map_location');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  };
+  const [mapLocation, setMapLocationState] = useState(getSavedMapLocation);
+
+  const setMapLocation = (loc) => {
+    setMapLocationState(loc);
+    if (loc) {
+      localStorage.setItem('moes_map_location', JSON.stringify(loc));
+    } else {
+      localStorage.removeItem('moes_map_location');
+    }
+  };
+
   // Restore authenticated user on mount if token exists
   useEffect(() => {
     const restoreUser = async () => {
@@ -162,7 +180,9 @@ export const AppProvider = ({ children }) => {
         forecastData,
         loadingForecast,
         selectedCrop,
-        setSelectedCrop
+        setSelectedCrop,
+        mapLocation,
+        setMapLocation
       }}
     >
       {children}

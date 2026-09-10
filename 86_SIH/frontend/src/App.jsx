@@ -65,8 +65,6 @@ function AppContent() {
           {renderActivePage()}
         </main>
       </div>
-
-      <Footer />
     </div>
   );
 }

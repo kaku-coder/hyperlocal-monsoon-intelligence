@@ -31,6 +31,10 @@
   font-family: inherit !important;
 }
 
+.leaflet-control-attribution {
+  display: none !important;
+}
+
 .leaflet-popup-content-wrapper {
   background: #0f172a !important;
   color: #f8fafc !important;

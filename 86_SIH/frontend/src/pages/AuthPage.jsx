@@ -51,8 +51,32 @@ const lookupPincode = async (pin) => {
   }
 };
 
+const geocodePincodeForMap = async (pincode, district, block) => {
+  if (!pincode || pincode.length !== 6) return null;
+  try {
+    const nomRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(pincode)}+India&format=json&limit=1&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    if (nomRes.ok) {
+      const nomData = await nomRes.json();
+      if (nomData.length > 0) {
+        return {
+          lat: parseFloat(nomData[0].lat),
+          lng: parseFloat(nomData[0].lon),
+          pincode,
+          address: nomData[0].display_name || '',
+          district: district || '',
+          block: block || '',
+        };
+      }
+    }
+  } catch {}
+  return null;
+};
+
 export const AuthPage = () => {
-  const { loginUserSession, setSelectedDistrict, setSelectedBlock, setActiveTab } = useApp();
+  const { loginUserSession, setSelectedDistrict, setSelectedBlock, setActiveTab, setMapLocation } = useApp();
 
   const [mode, setMode] = useState('login');
 
@@ -165,7 +189,13 @@ export const AuthPage = () => {
         setSelectedDistrict(res.user.district);
         setSelectedBlock(res.user.block);
       }
-      setTimeout(() => setActiveTab('landing'), 600);
+      // Geocode pincode and save to mapLocation for Google Maps
+      const userPin = res.user?.pincode || pincode;
+      if (userPin) {
+        const mapLoc = await geocodePincodeForMap(userPin, res.user?.district || district, res.user?.block || block);
+        if (mapLoc) setMapLocation(mapLoc);
+      }
+      setTimeout(() => setActiveTab('map'), 600);
     } else {
       setErrorMsg(res.message || 'Invalid name or password.');
     }
