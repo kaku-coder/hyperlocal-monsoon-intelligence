@@ -324,3 +324,5 @@ export {
   getAutoLocationByIP
 };
 
+
+/** Controller Registry - Unified Endpoints for Forecast, Alerts & Signals */
