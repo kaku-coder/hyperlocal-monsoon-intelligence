@@ -2,7 +2,19 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
-import { sendSmsOtp } from "../services/smsService.js";
+import { sendSmsOtp, dispatchSms } from "../services/smsService.js";
+
+// Helper to send login notification SMS to registered phone number
+const sendLoginNotificationSms = async (user) => {
+  if (!user || !user.phoneNumber) return;
+  try {
+    const message = `MoES Monsoon Intel: Welcome ${user.name || 'Farmer'}! Your mobile number (+91 ${user.phoneNumber}) is saved in database for ${user.block || 'Rajkanika'} (${user.district || 'Kendrapara'}). Automatic weather alerts & broadcasts are now ACTIVE.`;
+    const res = await dispatchSms(user.phoneNumber, message, "LOGIN-NOTIFICATION");
+    console.log(`📲 Login notification SMS sent to +91 ${user.phoneNumber} via ${res.provider}`);
+  } catch (err) {
+    console.warn("Failed to send login notification SMS:", err.message);
+  }
+};
 
 
 // Helper to generate JWT Token
@@ -130,6 +142,9 @@ export const verifyOtp = async (req, res) => {
     // Set Cookie
     res.cookie("token", token, cookieOptions);
 
+    // Send login notification SMS to user's saved phone number
+    sendLoginNotificationSms(user);
+
     res.json({
       status: "success",
       message: "Phone number verified & logged in successfully!",
@@ -193,6 +208,9 @@ export const mobileLogin = async (req, res) => {
 
     const token = generateToken(user._id, user.phoneNumber, user.role);
     res.cookie("token", token, cookieOptions);
+
+    // Send login notification SMS to user's saved phone number
+    sendLoginNotificationSms(user);
 
     res.json({
       status: "success",
@@ -286,6 +304,9 @@ export const registerUser = async (req, res) => {
     const token = generateToken(user._id, user.phoneNumber, user.role);
     res.cookie("token", token, cookieOptions);
 
+    // Send registration/login notification SMS to user's saved phone number
+    sendLoginNotificationSms(user);
+
     res.status(201).json({
       status: "success",
       message: "User registered successfully!",
@@ -347,6 +368,9 @@ export const loginUser = async (req, res) => {
 
     const token = generateToken(user._id, user.phoneNumber, user.role);
     res.cookie("token", token, cookieOptions);
+
+    // Send login notification SMS to user's saved phone number
+    sendLoginNotificationSms(user);
 
     res.json({
       status: "success",

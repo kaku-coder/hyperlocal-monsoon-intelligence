@@ -3,7 +3,8 @@ import {
   streamWeatherAlerts,
   postCheckWeatherAlert,
   postTriggerBroadcast,
-  postRunSweep
+  postRunSweep,
+  postBroadcastToAllUsers
 } from "../controllers/weatherAlertController.js";
 
 const router = express.Router();
@@ -16,6 +17,9 @@ router.post("/check", postCheckWeatherAlert);
 
 // Manual/forced broadcast for a block (bypasses dedup with force:true)
 router.post("/trigger", postTriggerBroadcast);
+
+// Broadcast SMS to all registered phone numbers saved in database
+router.post("/broadcast-users", postBroadcastToAllUsers);
 
 // Full ML sweep across all Odisha blocks
 router.post("/sweep", postRunSweep);

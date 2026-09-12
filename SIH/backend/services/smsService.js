@@ -87,6 +87,8 @@ export const sendWeatherAlertSms = async (phoneNumber, message) =>
   dispatchSms(phoneNumber, message, "WEATHER-ALERT");
 
 export const sendSmsOtp = async (phoneNumber, otp) => {
+  const fast2smsApiKey = getFast2SmsKey();
+  const { twilioSid, twilioToken, twilioPhone } = getTwilioConfig();
 
   // Option 1: Fast2SMS (Indian SMS Provider)
   if (fast2smsApiKey) {

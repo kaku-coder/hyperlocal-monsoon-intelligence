@@ -10,6 +10,7 @@ export const AppProvider = ({ children }) => {
   const [activeTab, setActiveTab] = useState('command-center');
   const [farmerLanguage, setFarmerLanguage] = useState('en'); // 'en', 'hi', 'or'
   const [theme, setTheme] = useState('dark'); // 'dark' or 'light'
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // User Auth State
   const [user, setUser] = useState(null);
@@ -303,7 +304,9 @@ export const AppProvider = ({ children }) => {
         selectedCrop,
         setSelectedCrop,
         mapLocation,
-        setMapLocation
+        setMapLocation,
+        isMobileSidebarOpen,
+        setIsMobileSidebarOpen
       }}
     >
       {children}

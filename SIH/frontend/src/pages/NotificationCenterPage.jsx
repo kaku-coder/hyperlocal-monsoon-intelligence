@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { fetchNotificationStats, sendNotificationApi, composeNotificationApi } from '../services/api';
+import { fetchNotificationStats, sendNotificationApi, composeNotificationApi, broadcastToDatabaseUsersApi } from '../services/api';
 import { 
   BellRing, 
   Send, 
@@ -49,6 +49,27 @@ export const NotificationCenterPage = () => {
   useEffect(() => {
     loadStats();
   }, []);
+
+  const handleDbBroadcast = async () => {
+    setSending(true);
+    const res = await broadcastToDatabaseUsersApi({
+      customMessage: previewLanguage === 'or' ? messageOr : previewLanguage === 'hi' ? messageHi : messageEn,
+      district: selectedDistrict
+    });
+    if (res?.status === 'success') {
+      const count = res.count || res.delivered?.length || 1;
+      setDeliveryResult({ sent: count, delivered: count, failed: 0, block: selectedBlock });
+      setSuccessToast(
+        `📲 Real SMS Broadcast dispatched to ${count} registered phone numbers saved in database for ${selectedDistrict} district!`
+      );
+      await loadStats();
+      setTimeout(() => setSuccessToast(null), 8000);
+    } else {
+      setSuccessToast('Database broadcast failed — please check database connection.');
+      setTimeout(() => setSuccessToast(null), 5000);
+    }
+    setSending(false);
+  };
 
   const handleComposeAi = async () => {
     setComposingAi(true);
@@ -115,6 +136,26 @@ export const NotificationCenterPage = () => {
 
   const logs = statsData?.logs || [];
 
+  const handleRequestDeviceNotification = () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') {
+          new Notification('🔔 Device Notifications Active', {
+            body: 'You will now receive instant pop-up weather alerts directly on your mobile / PC device screen!',
+            icon: '/favicon.ico'
+          });
+          setSuccessToast('🔔 Device Push Notifications enabled! Test notification sent to your screen.');
+        } else {
+          setSuccessToast('Device push notifications were blocked/denied in browser settings.');
+        }
+        setTimeout(() => setSuccessToast(null), 6000);
+      });
+    } else {
+      setSuccessToast('Browser Push Notifications are not supported in this browser environment.');
+      setTimeout(() => setSuccessToast(null), 5000);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
       
@@ -128,17 +169,27 @@ export const NotificationCenterPage = () => {
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Simulated multi-channel (SMS, WhatsApp, Voice OBD) dissemination gateway for block agricultural officers
+            Simulated multi-channel (SMS, WhatsApp, Voice OBD & Browser Push) dissemination gateway for block agricultural officers
           </p>
         </div>
 
-        <button
-          onClick={loadStats}
-          className="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-950/60 border border-sky-800 px-3 py-1.5 rounded-xl hover:bg-sky-900/60 transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Delivery Logs</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleRequestDeviceNotification}
+            className="flex items-center gap-2 text-xs font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800 px-3 py-1.5 rounded-xl hover:bg-emerald-900/60 transition-colors cursor-pointer"
+          >
+            <BellRing className="h-3.5 w-3.5 text-emerald-400" />
+            <span>🔔 Enable / Test Device Push</span>
+          </button>
+
+          <button
+            onClick={loadStats}
+            className="flex items-center gap-2 text-xs font-semibold text-sky-400 bg-sky-950/60 border border-sky-800 px-3 py-1.5 rounded-xl hover:bg-sky-900/60 transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh Delivery Logs</span>
+          </button>
+        </div>
       </div>
 
       {/* Success Toast */}
@@ -309,14 +360,25 @@ export const NotificationCenterPage = () => {
               )}
             </div>
 
-            <button
-              onClick={handleBroadcast}
-              disabled={sending}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-700/30 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Send className={`h-4 w-4 ${sending ? 'animate-pulse' : ''}`} />
-              <span>{sending ? 'Transmitting Real SMS...' : `Send Broadcast to ${selectedBlock}`}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleBroadcast}
+                disabled={sending}
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg shadow-emerald-700/30 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Send className={`h-4 w-4 ${sending ? 'animate-pulse' : ''}`} />
+                <span>{sending ? 'Transmitting...' : `Send to ${selectedBlock}`}</span>
+              </button>
+
+              <button
+                onClick={handleDbBroadcast}
+                disabled={sending}
+                className="flex items-center gap-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg shadow-sky-700/30 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Users className={`h-4 w-4 ${sending ? 'animate-pulse' : ''}`} />
+                <span>{sending ? 'Broadcasting...' : `📲 Send SMS to All Saved DB Farmers`}</span>
+              </button>
+            </div>
           </div>
         </div>
 

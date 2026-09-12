@@ -12,6 +12,47 @@ import { AlertTriangle, CloudRain, Radio, X } from 'lucide-react';
 
 const AUTO_DISMISS_MS = 55000;
 
+// Web Audio chime sound trigger for device notification pop-up
+const triggerNotificationSound = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    console.warn('Audio chime warning:', e);
+  }
+};
+
+// Native OS/Browser device push notification trigger
+const triggerDevicePushNotification = (title, body) => {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+          dir: 'auto'
+        });
+      } catch (e) {
+        console.warn('Native notification error:', e);
+      }
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }
+};
+
 export const WeatherBroadcastBanner = () => {
   const [report, setReport] = useState(null);
   const [streamState, setStreamState] = useState('connecting'); // connecting | live | offline
@@ -22,6 +63,11 @@ export const WeatherBroadcastBanner = () => {
       (payload) => {
         setStreamState('live');
         setReport(payload);
+        triggerNotificationSound();
+        triggerDevicePushNotification(
+          `🚨 Weather Alert: ${payload.district || 'MoES Odisha'}`,
+          payload.message_en || payload.message_or || 'Moderate to heavy monsoon showers expected within 12h.'
+        );
         const timer = setTimeout(() => setReport(null), AUTO_DISMISS_MS);
         return () => clearTimeout(timer);
       },

@@ -11,7 +11,9 @@ import {
   User,
   LogOut,
   LogIn,
-  Search
+  Search,
+  Menu,
+  X
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -31,7 +33,9 @@ export const Navbar = () => {
     selectedPanchayat,
     setSelectedPanchayat,
     changeLocation,
-    loadingForecast
+    loadingForecast,
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -201,8 +205,17 @@ export const Navbar = () => {
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-3 sm:px-6 gap-2 min-w-0 w-full">
         
-        {/* Left: MoES / NCMRWF Brand Identity */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Left: MoES / NCMRWF Brand Identity & Mobile Hamburger Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Mobile Hamburger Menu Toggle */}
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="md:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer"
+            title="Toggle Menu"
+          >
+            {isMobileSidebarOpen ? <X className="h-5 w-5 text-sky-400" /> : <Menu className="h-5 w-5 text-sky-400" />}
+          </button>
+
           <div 
             onClick={() => setActiveTab('landing')}
             className="flex items-center gap-3 cursor-pointer group"
