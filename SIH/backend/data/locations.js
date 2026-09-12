@@ -2044,3 +2044,5 @@ export {
   getLocationById,
   findLocation
 };
+
+/** Location DB v2.0 - Hyperlocal Odisha Agro-Meteorological Database */
