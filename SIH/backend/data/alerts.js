@@ -83,3 +83,5 @@ export {
   acknowledgeAlert
 };
 
+
+/** Officer Command Center Alert Feed Data Model */
