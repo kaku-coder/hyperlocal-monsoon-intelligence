@@ -222,26 +222,37 @@ export const AppProvider = ({ children }) => {
   // Handler to select location cleanly — resolves id from blocks, stores everything
   const changeLocation = (district, block, locId, panchayat) => {
     const d = district || selectedDistrict;
-    let b = block || selectedBlock;
-    let id = locId || selectedLocationId;
-    let p = panchayat || selectedPanchayat;
+    const isNewDistrict = d && d.toLowerCase() !== (selectedDistrict || '').toLowerCase();
 
-    // resolve id + gp from known blocks if not supplied
-    const pool = blocks && blocks.length > 0 ? blocks : getLocalFallbackBlocks(d);
-    const match = pool.find(x => x.block.toLowerCase() === (b || '').toLowerCase());
+    // Use fresh block pool if district changed to avoid matching against stale blocks
+    const pool = (isNewDistrict || !blocks || blocks.length === 0)
+      ? getLocalFallbackBlocks(d)
+      : blocks;
+    
+    if (isNewDistrict) {
+      setBlocks(pool);
+    }
+
+    let b = block;
+    let id = locId;
+    let p = panchayat;
+
+    const match = pool.find(x => x.block.toLowerCase() === (b || '').toLowerCase()) || pool[0];
     if (match) {
       b = match.block;
-      if (!locId) id = match.id;
+      if (!id) id = match.id;
       const gps = match.panchayats || [];
-      if (!panchayat || !gps.includes(panchayat)) {
+      if (!p || (gps.length > 0 && !gps.includes(p))) {
         p = gps[0] || p;
       }
     }
 
     setSelectedDistrict(d);
     localStorage.setItem('moes_selected_district', d);
-    setSelectedBlock(b);
-    localStorage.setItem('moes_selected_block', b);
+    if (b) {
+      setSelectedBlock(b);
+      localStorage.setItem('moes_selected_block', b);
+    }
     if (id) {
       setSelectedLocationId(id);
       localStorage.setItem('moes_selected_locationId', id);
@@ -250,6 +261,7 @@ export const AppProvider = ({ children }) => {
       setSelectedPanchayatState(p);
       localStorage.setItem('moes_selected_panchayat', p);
     }
+
     persistLocation(d, b, p, id);
     locationSocket.changeLocation({ district: d, block: b, panchayat: p, locationId: id });
   };

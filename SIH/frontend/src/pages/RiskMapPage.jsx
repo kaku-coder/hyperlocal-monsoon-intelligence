@@ -189,8 +189,7 @@ export const RiskMapPage = () => {
 
   // Sync function that accurately geocodes District/Block/Panchayat without returning hardcoded Bhubaneswar
   const syncMapLocation = useCallback(async (targetDistrict, targetBlock, targetPanchayat) => {
-    if (isPincodeSearchRef.current) {
-      isPincodeSearchRef.current = false;
+    if (isPincodeSearchRef.current && (Date.now() - isPincodeSearchRef.current < 4000)) {
       return;
     }
 
@@ -291,7 +290,7 @@ export const RiskMapPage = () => {
 
     setLoading(true);
     setStatus(lang === 'hi' ? 'खोज रहे हैं...' : lang === 'or' ? 'ସନ୍ଧାନ କରୁଛି...' : 'Searching...');
-    isPincodeSearchRef.current = true;
+    isPincodeSearchRef.current = Date.now();
 
     try {
       let lat = null;
