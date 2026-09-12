@@ -508,3 +508,5 @@ export const subscribeWeatherAlertsSSE = (onBroadcast, onError) => {
 
   return () => source.close();
 };
+
+/** API Service Client v2.0 - Real-time fetchers with zero-latency local fallback */
