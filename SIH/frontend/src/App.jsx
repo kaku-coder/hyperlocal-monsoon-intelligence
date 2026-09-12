@@ -58,15 +58,15 @@ function AppContent() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 font-sans">
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 font-sans max-w-full overflow-x-hidden">
       <WeatherBroadcastBanner />
       <Navbar />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden max-w-full">
         {/* Only show standard sidebar when NOT in full mobile Farmer Mode */}
         {activeTab !== 'farmer-mode' && <Sidebar />}
 
-        <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950">
+        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden bg-slate-950 min-w-0">
           {renderActivePage()}
         </main>
       </div>

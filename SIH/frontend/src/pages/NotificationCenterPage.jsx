@@ -50,6 +50,28 @@ export const NotificationCenterPage = () => {
     loadStats();
   }, []);
 
+  const handleComposeAi = async () => {
+    setComposingAi(true);
+    const res = await composeNotificationApi({
+      locationId: selectedLocationId,
+      district: selectedDistrict,
+      block: selectedBlock,
+      crop: 'rice'
+    });
+    if (res?.status === 'success' && res?.message_en) {
+      setMessageEn(res.message_en);
+      setMessageHi(res.message_hi);
+      setMessageOr(res.message_or);
+      setAiNote(res);
+      setDeliveryResult(null);
+      setSuccessToast('🤖 AI auto-composed the multilingual advisory from live ML nowcast + crop engine.');
+    } else {
+      setSuccessToast('AI compose failed — check ML service (port 8008).');
+    }
+    setComposingAi(false);
+    setTimeout(() => setSuccessToast(null), 5000);
+  };
+
   const handleBroadcast = async () => {
     setSending(true);
     const payload = {
@@ -58,16 +80,25 @@ export const NotificationCenterPage = () => {
       block: selectedBlock,
       urgency: "HIGH",
       channel: selectedChannel,
-      recipients_count: 5240,
       message_en: messageEn,
       message_hi: messageHi,
       message_or: messageOr
     };
 
     const res = await sendNotificationApi(payload);
+    const summary = res?.summary;
     if (res?.status === 'success') {
-      setSuccessToast(`Dispatched broadcast to 5,240 registered farmers in ${selectedBlock} block.`);
+      const sent = summary?.sms_sent || 0;
+      const delivered = summary?.delivered || 0;
+      const failed = summary?.failed || 0;
+      setDeliveryResult({ sent, delivered, failed, block: summary?.block || selectedBlock });
+      setSuccessToast(
+        `Broadcast dispatched. SMS sent: ${sent} | Delivered: ${delivered} | Failed: ${failed} (registered farmers in ${summary?.block || selectedBlock})`
+      );
       await loadStats();
+      setTimeout(() => setSuccessToast(null), 8000);
+    } else {
+      setSuccessToast('Broadcast failed — check backend/ML service.');
       setTimeout(() => setSuccessToast(null), 5000);
     }
     setSending(false);
@@ -178,9 +209,20 @@ export const NotificationCenterPage = () => {
               <Send className="h-4 w-4 text-sky-400" />
               <span>Compose & Broadcast Block Advisory</span>
             </h2>
-            <span className="text-xs font-mono text-amber-300 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-              Target: {selectedBlock} ({selectedDistrict})
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleComposeAi}
+                disabled={composingAi}
+                title="AI writes the EN/HI/OR advisory automatically from the live ML nowcast + crop advisory engine"
+                className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-900/60 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className={`h-4 w-4 ${composingAi ? 'animate-spin' : ''}`} />
+                <span>{composingAi ? 'AI Composing...' : '✨ AI Auto-Generate Message'}</span>
+              </button>
+              <span className="text-xs font-mono text-amber-300 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+                Target: {selectedBlock} ({selectedDistrict})
+              </span>
+            </div>
           </div>
 
           {/* Channel Selector */}
@@ -256,8 +298,15 @@ export const NotificationCenterPage = () => {
 
           {/* Send Broadcast Action */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="text-xs text-slate-400">
-              Estimated Reach: <strong className="text-white font-mono">5,240 registered farmers</strong> in {selectedBlock}
+            <div className="flex flex-col gap-1">
+              <div className="text-xs text-slate-400">
+                Delivery: <strong className="text-white font-mono">{deliveryResult ? `${deliveryResult.sent} SMS attempted → ${deliveryResult.delivered} delivered / ${deliveryResult.failed} failed` : 'registers real farmers from DB (district/block)'}</strong> in {selectedBlock}
+              </div>
+              {aiNote && (
+                <div className="text-[10px] text-emerald-400 font-mono">
+                  AI content: severity={aiNote.severity} · rain_12h={aiNote.rain_mm_12h}mm · prob={(aiNote.heavy_rain_probability * 100).toFixed(0)}% · {aiNote.composed_by}
+                </div>
+              )}
             </div>
 
             <button
@@ -266,7 +315,7 @@ export const NotificationCenterPage = () => {
               className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-700/30 transition-all cursor-pointer disabled:opacity-50"
             >
               <Send className={`h-4 w-4 ${sending ? 'animate-pulse' : ''}`} />
-              <span>{sending ? 'Transmitting Broadcast...' : `Send Broadcast to ${selectedBlock}`}</span>
+              <span>{sending ? 'Transmitting Real SMS...' : `Send Broadcast to ${selectedBlock}`}</span>
             </button>
           </div>
         </div>

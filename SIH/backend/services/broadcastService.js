@@ -26,13 +26,27 @@ import { alertEventBus, WEATHER_BROADCAST_EVENT } from "./eventBus.js";
  */
 export const getRegisteredFarmersForLocation = async (district, block) => {
   try {
-    const farmers = await User.find({
+    // Match on role=FARMER. District spelling in DB can differ from the
+    // canonical location name ("Khorda" vs "Khordha"), so fall back to a
+    // block-only match (and then a contains match) to still reach farmers.
+    let farmers = await User.find({
       role: "FARMER",
       $or: [
         { district: new RegExp(`^${district}$`, "i"), block: new RegExp(`^${block}$`, "i") },
-        { district: district || ".*", block: block || ".*" }
+        { block: new RegExp(`^${block}$`, "i") }
       ]
     }).lean();
+
+    if (!farmers || farmers.length === 0) {
+      // Last-resort: fuzzy contains match on both names
+      farmers = await User.find({
+        role: "FARMER",
+        $or: [
+          { district: new RegExp(district.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace("h", "h?"), "i") },
+          { block: new RegExp(block, "i") }
+        ]
+      }).lean();
+    }
 
     return (farmers || []).map(f => ({
       id: String(f._id || f.id),

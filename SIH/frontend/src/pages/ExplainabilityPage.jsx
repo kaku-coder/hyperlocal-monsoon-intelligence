@@ -112,12 +112,12 @@ export const ExplainabilityPage = () => {
           </p>
         </div>
 
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-72 w-full overflow-x-auto min-w-0">
+          <ResponsiveContainer width="100%" height="100%" minWidth={320}>
             <BarChart
               layout="vertical"
               data={sortedContributions}
-              margin={{ top: 10, right: 30, left: 140, bottom: 5 }}
+              margin={{ top: 10, right: 15, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
               <XAxis type="number" stroke="#64748b" fontSize={11} domain={[0, 30]} unit="%" />
@@ -125,7 +125,8 @@ export const ExplainabilityPage = () => {
                 type="category" 
                 dataKey="label" 
                 stroke="#cbd5e1" 
-                fontSize={12} 
+                fontSize={11} 
+                width={120}
                 tick={{ fill: '#e2e8f0', fontWeight: 600 }}
               />
               <Tooltip 

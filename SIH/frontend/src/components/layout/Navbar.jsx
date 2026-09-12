@@ -122,8 +122,8 @@ export const Navbar = () => {
   };
 
   const renderLocationSelects = (isMobile = false) => (
-    <div className={`items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner ${isMobile ? 'flex flex-wrap' : 'hidden lg:flex'}`}>
-      <div className="flex items-center gap-1 text-slate-400">
+    <div className={`items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner min-w-0 shrink ${isMobile ? 'flex flex-wrap' : 'hidden xl:flex'}`}>
+      <div className="flex items-center gap-1 text-slate-400 shrink-0">
         <MapPin className="h-3.5 w-3.5 text-sky-400" />
         <span className="font-semibold text-slate-300">{selectedState}</span>
         <ChevronRight className="h-3 w-3 text-slate-600" />
@@ -134,7 +134,7 @@ export const Navbar = () => {
         value={selectedDistrict || ''}
         onChange={handleDistrictChange}
         title={`${districtCount} districts available`}
-        className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer max-w-[140px]"
+        className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer max-w-[130px] shrink"
       >
         {districtCount === 0 && <option value="">Loading…</option>}
         {(districts || []).map(d => (
@@ -144,14 +144,14 @@ export const Navbar = () => {
         ))}
       </select>
 
-      <ChevronRight className="h-3 w-3 text-slate-600" />
+      <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
 
       {/* Block Dropdown — shows ALL blocks of selected district */}
       <select
         value={selectedBlock || ''}
         onChange={handleBlockChange}
         title={`${blockCount} blocks in ${selectedDistrict}`}
-        className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer max-w-[170px]"
+        className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer max-w-[140px] shrink"
       >
         {blockCount === 0 && <option value="">No blocks</option>}
         {(blocks || []).map(b => (
@@ -161,14 +161,14 @@ export const Navbar = () => {
         ))}
       </select>
 
-      <ChevronRight className="h-3 w-3 text-slate-600" />
+      <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
 
       {/* Panchayat / GP Dropdown — shows ALL GPs of selected block */}
       <select
         value={selectedPanchayat || ''}
         onChange={handlePanchayatChange}
         title={`${gpCount} GPs in ${selectedBlock}`}
-        className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer max-w-[160px]"
+        className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer max-w-[130px] shrink"
       >
         {gpCount === 0 && <option value="">No GPs</option>}
         {activePanchayats.map(p => (
@@ -179,27 +179,27 @@ export const Navbar = () => {
       </select>
 
       {/* Place / GP / Pincode Universal Search Input */}
-      <form onSubmit={handleNavSearch} className="flex items-center gap-1 bg-slate-800/90 border border-slate-700 rounded-lg px-2 py-1">
+      <form onSubmit={handleNavSearch} className="flex items-center gap-1 bg-slate-800/90 border border-slate-700 rounded-lg px-2 py-1 shrink-0">
         <Search className="h-3 w-3 text-cyan-400 shrink-0" />
         <input
           type="text"
           value={navSearch}
           onChange={(e) => setNavSearch(e.target.value)}
           placeholder="Search Place / GP / PIN..."
-          className="w-28 sm:w-36 bg-transparent text-[11px] text-white placeholder-slate-400 focus:outline-none font-medium"
+          className="w-24 sm:w-32 bg-transparent text-[11px] text-white placeholder-slate-400 focus:outline-none font-medium"
         />
         <button type="submit" disabled={navSearching} className="text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-1.5 py-0.5 rounded cursor-pointer">
           {navSearching ? '...' : 'Go'}
         </button>
       </form>
 
-      {loadingForecast && <span className="text-[10px] text-cyan-400 animate-pulse ml-1">● live</span>}
+      {loadingForecast && <span className="text-[10px] text-cyan-400 animate-pulse ml-1 shrink-0">● live</span>}
     </div>
   );
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6 gap-2">
+      <div className="flex h-16 items-center justify-between px-3 sm:px-6 gap-2 min-w-0 w-full">
         
         {/* Left: MoES / NCMRWF Brand Identity */}
         <div className="flex items-center gap-3 shrink-0">
@@ -220,7 +220,7 @@ export const Navbar = () => {
                   MoES <span className="text-sky-400">•</span> NCMRWF
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[200px] sm:max-w-none">
+              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[180px] sm:max-w-none">
                 Hyperlocal Monsoon Onset & Break Intelligence System
               </p>
             </div>
@@ -230,14 +230,14 @@ export const Navbar = () => {
         {/* Center: Hyperlocal Location Cascader (desktop) */}
         {renderLocationSelects(false)}
 
-        {/* Right: Mode Switcher, Language & Auth Button */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Right: Mode Switcher, Language & Auth Button (ALWAYS VISIBLE & UNCLIPPED) */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto">
           
           {/* Toggle between Officer Command Center and Farmer Mode */}
           {activeTab === 'farmer-mode' ? (
             <button
               onClick={() => setActiveTab('command-center')}
-              className="flex items-center gap-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md shadow-sky-600/20 transition-all cursor-pointer shrink-0"
             >
               <Activity className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Officer Command Center</span>
@@ -246,7 +246,7 @@ export const Navbar = () => {
           ) : (
             <button
               onClick={() => setActiveTab('farmer-mode')}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md shadow-emerald-600/20 transition-all cursor-pointer shrink-0"
             >
               <Sprout className="h-3.5 w-3.5 text-amber-200" />
               <span>🌾 Farmer Mode</span>
@@ -254,7 +254,7 @@ export const Navbar = () => {
           )}
 
           {/* Language Selector */}
-          <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+          <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs shrink-0">
             <button
               onClick={() => setFarmerLanguage('en')}
               className={`px-2 py-1 rounded font-medium transition-colors ${
@@ -284,7 +284,7 @@ export const Navbar = () => {
           {/* Alerts Bell */}
           <button
             onClick={() => setActiveTab('alerts')}
-            className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
+            className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors cursor-pointer shrink-0"
             title="Active Meteorological Alerts"
           >
             <Bell className="h-4 w-4" />
@@ -294,7 +294,7 @@ export const Navbar = () => {
 
           {/* Auth State Button */}
           {isLoggedIn ? (
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs text-white font-semibold transition-all cursor-pointer shadow-md"
@@ -335,9 +335,9 @@ export const Navbar = () => {
           ) : (
             <button
               onClick={() => setActiveTab('auth')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-sky-600/20 transition-all cursor-pointer shrink-0"
             >
-              <LogIn className="h-3.5 w-3.5" />
+              <LogIn className="h-3.5 w-3.5 text-white" />
               <span>Sign In</span>
             </button>
           )}
@@ -346,8 +346,8 @@ export const Navbar = () => {
 
       </div>
 
-      {/* Mobile location bar — visible below header on small screens */}
-      <div className="lg:hidden px-3 pb-2 overflow-x-auto">
+      {/* Mobile location bar — visible below header on small/medium screens */}
+      <div className="xl:hidden px-3 pb-2 overflow-x-auto">
         {renderLocationSelects(true)}
       </div>
 
