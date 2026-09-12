@@ -112,13 +112,7 @@ export const RiskMapPage = () => {
   const [radarTimestamp, setRadarTimestamp] = useState(null);
 
   const getTileUrl = (style) => {
-    if (style === 'esri-satellite') {
-      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-    }
-    if (style === 'carto-dark') {
-      return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-    }
-    return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
   };
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
@@ -326,21 +320,16 @@ export const RiskMapPage = () => {
         <div className="pointer-events-auto flex flex-wrap items-center gap-2">
           
           <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 p-1 rounded-2xl shadow-2xl flex items-center text-xs">
+            <div className="px-3 py-1.5 rounded-xl font-bold bg-cyan-600 text-white shadow-md flex items-center gap-1.5">
+              <span>🌍 Satellite Map</span>
+            </div>
             <button
-              onClick={() => setMapStyle('esri-satellite')}
+              onClick={() => setShowClouds(!showClouds)}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                mapStyle === 'esri-satellite' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                showClouds ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              <span>🌍 Satellite Hybrid</span>
-            </button>
-            <button
-              onClick={() => setMapStyle('carto-dark')}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                mapStyle === 'carto-dark' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>🗺️ Dark GIS</span>
+              <span>🌧️ Radar Overlay</span>
             </button>
           </div>
 
@@ -379,6 +368,8 @@ export const RiskMapPage = () => {
             url={`https://tilecache.rainviewer.com/v2/radar/${radarTimestamp}/256/{z}/{x}/{y}/2/1_1.png`}
             opacity={0.6}
             zIndex={400}
+            maxNativeZoom={7}
+            maxZoom={19}
           />
         )}
 

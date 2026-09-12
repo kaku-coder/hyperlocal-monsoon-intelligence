@@ -17,7 +17,7 @@ import {
 const navigationItems = [
   { id: 'landing', label: 'Landing & Concept', icon: Home, badge: null },
   { id: 'command-center', label: 'Command Center', icon: LayoutDashboard, badge: 'Live' },
-  { id: 'risk-map', label: 'GIS Risk Map', icon: Map, badge: 'GIS' },
+  { id: 'risk-map', label: 'Risk Map', icon: Map, badge: 'Live' },
   { id: 'forecast', label: '7–30 Day Forecast', icon: CalendarDays, badge: null },
   { id: 'climate-signals', label: 'Climate Signals', icon: Radio, badge: 'ENSO' },
   { id: 'advisories', label: 'Crop Advisory Engine', icon: Sprout, badge: 'AI' },
