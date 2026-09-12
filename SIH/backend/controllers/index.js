@@ -103,6 +103,40 @@ const getForecastForLocation = (req, res) => {
     }
   ];
 
+  // Generate real-time 7-day daily forecast strip starting from current date
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const todayDate = new Date();
+  const total7dRain = m.expected_rainfall_7d || 45;
+  const breakProb = m.break_probability || 0.3;
+  const heavyProb = m.heavy_rain_probability || 0.2;
+
+  const daily_strip = Array.from({ length: 7 }).map((_, idx) => {
+    const d = new Date(todayDate);
+    d.setDate(d.getDate() + idx);
+    const dayName = idx === 0 ? "Today" : daysOfWeek[d.getDay()];
+
+    let rain = 0;
+    if (idx === 0) rain = Math.round(total7dRain * (heavyProb > 0.4 ? 0.35 : 0.28));
+    else if (idx === 1) rain = Math.round(total7dRain * (breakProb > 0.6 ? 0.08 : 0.26));
+    else if (idx === 2) rain = Math.round(total7dRain * (breakProb > 0.6 ? 0.04 : 0.22));
+    else if (idx === 3) rain = Math.round(total7dRain * (breakProb > 0.6 ? 0.0 : 0.14));
+    else if (idx === 4) rain = Math.round(total7dRain * 0.05);
+    else rain = 0;
+
+    let icon = "☀️";
+    if (rain >= 15) icon = "🌧️";
+    else if (rain >= 8) icon = "🌦️";
+    else if (rain > 0) icon = "⛅";
+
+    return {
+      day: dayName,
+      date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      rain_mm: rain,
+      icon,
+      probability: Math.min(95, Math.max(10, Math.round((rain / (total7dRain || 1)) * 180 + (1 - breakProb) * 30)))
+    };
+  });
+
   res.json({
     status: "success",
     location: {
@@ -136,6 +170,7 @@ const getForecastForLocation = (req, res) => {
       risk_factor: m.risk_factor
     },
     timeline,
+    daily_strip,
     generated_at: new Date().toISOString(),
     is_prototype: true
   });
