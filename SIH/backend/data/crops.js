@@ -320,3 +320,5 @@ export {
   generateCropAdvisory
 };
 
+
+/** Agro-Advisory Rules Engine for Odisha Paddy & Kharif Crops */
