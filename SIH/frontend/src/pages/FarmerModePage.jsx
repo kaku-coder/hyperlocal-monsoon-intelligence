@@ -444,16 +444,8 @@ export const FarmerModePage = () => {
           </div>
         </div>
 
-        {/* Emergency Kisan Call Center & Disclaimer */}
-        <div className="space-y-2 pt-2">
-          <a
-            href="tel:18001801551"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-amber-300 transition-colors shadow-md"
-          >
-            <PhoneCall className="h-4 w-4 text-amber-400" />
-            <span>{t.callKisanHelpline || t.fmCallHelpline || "Call Kisan Helpline (1800-180-1551)"}</span>
-          </a>
-
+        {/* Official Data Stream Disclaimer */}
+        <div className="pt-2">
           <p className="text-[10px] text-center text-slate-500 leading-tight">
             {t.disclaimer || "Official MoES/NCMRWF Weather Data Stream"}
           </p>
