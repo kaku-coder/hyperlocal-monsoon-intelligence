@@ -364,6 +364,28 @@ export const FarmerModePage = () => {
 
         </div>
 
+        {/* AI SOIL HEALTH SCANNER FEATURE CARD */}
+        <button
+          onClick={() => setActiveTab('soil-scanner')}
+          className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 border border-emerald-500/40 hover:border-emerald-400 shadow-lg text-left transition cursor-pointer group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 text-xl border border-emerald-500/30">
+              📸
+            </div>
+            <div>
+              <div className="text-xs font-black text-white group-hover:text-emerald-300 flex items-center gap-1.5">
+                <span>AI Soil Health Scanner</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-200">NEW</span>
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Take a photo of field soil for instant AI visual diagnosis & crop match
+              </div>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-emerald-400 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+
         {/* Crop Selection Pop-down Menu if open */}
         {showCropModal && (
           <div className="p-3 rounded-2xl bg-slate-900 border border-slate-700 space-y-1.5 shadow-2xl animate-in fade-in duration-200">

@@ -1,11 +1,15 @@
 import express from "express";
 import * as controllers from "../controllers/index.js";
 import authRoutes from "./auth.routes.js";
+import soilRoutes from "./soil.routes.js";
 
 const router = express.Router();
 
 // Authentication Routes
 router.use("/auth", authRoutes);
+
+// AI Soil Health Scanner Routes
+router.use("/soil", soilRoutes);
 
 
 // Locations
@@ -40,6 +44,7 @@ router.post("/alerts/acknowledge", controllers.postAcknowledgeAlert);
 // Notifications & Broadcasts
 router.get("/notifications/stats", controllers.getNotificationStatsHandler);
 router.post("/notifications/send", controllers.postSendNotification);
+router.post("/notifications/compose", controllers.postComposeBroadcast);
 
 // System Status
 router.get("/system-status", controllers.getSystemStatus);

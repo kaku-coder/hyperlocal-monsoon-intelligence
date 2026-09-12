@@ -8,8 +8,9 @@ import climateSignals from "../data/climateSignals.js";
 import historicalData from "../data/historical.js";
 import { getOdishaGeoJSON } from "../data/geoJson.js";
 import { officerAlerts, getAlerts, acknowledgeAlert } from "../data/alerts.js";
-import { notificationLogs, getNotificationStats, sendSimulatedNotification } from "../data/notifications.js";
+import { notificationLogs, getNotificationStats } from "../data/notifications.js";
 import { predictWithML, explainWithML } from "../services/mlService.js";
+import { composeAIBroadcast, dispatchAIBroadcast } from "../services/broadcastService.js";
 
 
 // 1. Locations
@@ -225,9 +226,65 @@ const getNotificationStatsHandler = (req, res) => {
   res.json({ status: "success", stats, logs: notificationLogs });
 };
 
-const postSendNotification = (req, res) => {
-  const sent = sendSimulatedNotification(req.body);
-  res.json({ status: "success", message: "Broadcast dispatched successfully", record: sent });
+const postSendNotification = async (req, res) => {
+  const {
+    locationId,
+    district,
+    block,
+    crop = "rice",
+    urgency = "HIGH",
+    channel = "SMS",
+    phone_number = null,
+    message_en = null,
+    message_hi = null,
+    message_or = null,
+    auto_compose = true,
+    force = false
+  } = req.body || {};
+
+  if (!district || !block) {
+    return res.status(400).json({
+      status: "error",
+      message: "district and block are required to dispatch a broadcast."
+    });
+  }
+
+  try {
+    const result = await dispatchAIBroadcast({
+      district,
+      block,
+      locationId,
+      crop,
+      urgency,
+      channel,
+      phone_number,
+      message_en,
+      message_hi,
+      message_or,
+      auto_compose,
+      force
+    });
+    res.json(result);
+  } catch (err) {
+    console.error("AI Broadcast dispatch error:", err.message);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
+
+const postComposeBroadcast = async (req, res) => {
+  const { district, block, locationId, crop = "rice" } = req.body || {};
+
+  if (!district && !block && !locationId) {
+    return res.status(400).json({ status: "error", message: "Provide district/block or locationId." });
+  }
+
+  try {
+    const content = await composeAIBroadcast({ district, block, locationId, crop });
+    res.json({ status: "success", composed: true, ...content });
+  } catch (err) {
+    console.error("AI compose error:", err.message);
+    res.status(500).json({ status: "error", message: err.message });
+  }
 };
 
 // 10. System Status
@@ -320,6 +377,7 @@ export {
   postAcknowledgeAlert,
   getNotificationStatsHandler,
   postSendNotification,
+  postComposeBroadcast,
   getSystemStatus,
   getAutoLocationByIP
 };

@@ -10,6 +10,7 @@ import { CommandCenter } from './pages/CommandCenter';
 import { RiskMapPage } from './pages/RiskMapPage';
 import { ForecastPage } from './pages/ForecastPage';
 import { ClimateSignalsPage } from './pages/ClimateSignalsPage';
+import { SoilScannerPage } from './pages/SoilScannerPage';
 import { CropAdvisoryPage } from './pages/CropAdvisoryPage';
 import { FarmerModePage } from './pages/FarmerModePage';
 import { NotificationCenterPage } from './pages/NotificationCenterPage';
@@ -35,6 +36,8 @@ function AppContent() {
         return <ForecastPage />;
       case 'climate-signals':
         return <ClimateSignalsPage />;
+      case 'soil-scanner':
+        return <SoilScannerPage />;
       case 'advisories':
         return <CropAdvisoryPage />;
       case 'farmer-mode':

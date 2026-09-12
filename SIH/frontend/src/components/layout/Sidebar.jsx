@@ -11,7 +11,8 @@ import {
   History,
   HelpCircle,
   Activity,
-  Home
+  Home,
+  Scan
 } from 'lucide-react';
 
 const navigationItems = [
@@ -20,6 +21,7 @@ const navigationItems = [
   { id: 'risk-map', label: 'Risk Map', icon: Map, badge: 'Live' },
   { id: 'forecast', label: '7–30 Day Forecast', icon: CalendarDays, badge: null },
   { id: 'climate-signals', label: 'Climate Signals', icon: Radio, badge: 'ENSO' },
+  { id: 'soil-scanner', label: 'AI Soil Health Scanner', icon: Scan, badge: 'AI' },
   { id: 'advisories', label: 'Crop Advisory Engine', icon: Sprout, badge: 'AI' },
   { id: 'farmer-mode', label: 'Farmer Mode (Saathi)', icon: Smartphone, badge: 'Mobile' },
   { id: 'notifications', label: 'Notification Center', icon: BellRing, badge: 'SMS' },

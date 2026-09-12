@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { fetchNotificationStats, sendNotificationApi } from '../services/api';
+import { fetchNotificationStats, sendNotificationApi, composeNotificationApi } from '../services/api';
 import { 
   BellRing, 
   Send, 
@@ -24,6 +24,9 @@ export const NotificationCenterPage = () => {
   const [selectedChannel, setSelectedChannel] = useState('WhatsApp & SMS');
   const [previewLanguage, setPreviewLanguage] = useState('en');
   const [successToast, setSuccessToast] = useState(null);
+  const [composingAi, setComposingAi] = useState(false);
+  const [aiNote, setAiNote] = useState(null);
+  const [deliveryResult, setDeliveryResult] = useState(null);
 
   // Custom advisory draft text
   const [messageEn, setMessageEn] = useState(
