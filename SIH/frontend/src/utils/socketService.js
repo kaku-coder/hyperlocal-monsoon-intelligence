@@ -32,3 +32,5 @@ class LocationSocket {
 
 export const locationSocket = new LocationSocket();
 export default locationSocket;
+
+/** LocationSocket - Event Bus for Immediate Cross-Page Sync */
