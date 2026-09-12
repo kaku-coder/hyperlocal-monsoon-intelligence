@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { fetchHistorical } from '../services/api';
+import { fetchHistorical, fetchHistoricalML } from '../services/api';
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,16 +14,28 @@ import {
   Line,
   Cell
 } from 'recharts';
-import { History, Calendar, TrendingDown, TrendingUp, AlertCircle, MapPin } from 'lucide-react';
+import { History, Calendar, TrendingDown, AlertCircle, MapPin, Cpu, Sparkles, GitCompare, Activity } from 'lucide-react';
 
 export const HistoricalPage = () => {
   const { selectedLocationId, selectedBlock, selectedDistrict } = useApp();
   const [histData, setHistData] = useState(null);
+  const [mlData, setMlData] = useState(null);
 
   useEffect(() => {
     const loadHist = async () => {
       const data = await fetchHistorical(selectedLocationId);
       setHistData(data);
+      // Prefer embedded ml_insights; else call dedicated ML endpoint
+      if (data?.ml_insights?.status === 'success') {
+        setMlData(data.ml_insights);
+      } else if (data?.yearly_records) {
+        const ml = await fetchHistoricalML({
+          yearly_records: data.yearly_records,
+          current: { rainfall_anomaly: -24.0, dry_spell_days: 9, enso: 0.8, iod: -0.4 },
+          district_name: selectedDistrict, block_name: selectedBlock
+        });
+        if (ml?.status === 'success') setMlData(ml);
+      }
     };
     loadHist();
   }, [selectedLocationId]);
@@ -132,6 +144,30 @@ export const HistoricalPage = () => {
 
       </div>
 
+      {/* ML Insights: Trend + Anomaly + Analog + Climatology */}
+      {mlData && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="rounded-2xl bg-gradient-to-br from-sky-950/80 to-slate-900 border border-sky-700/40 p-5 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400">ML Trend Detection</div>
+            <div className="text-sm font-bold text-white">{mlData.trend?.interpretation}</div>
+            <div className="text-xs font-mono text-slate-300">Rainfall {mlData.trend?.rainfall_trend_mm_per_year} mm/yr (R² {mlData.trend?.rainfall_trend_r2}) • Dry {mlData.trend?.dry_spell_trend_days_per_year} d/yr</div>
+            <div className="text-[11px] text-slate-400">Model: {mlData.trend?.model} • v{mlData.model_version}</div>
+          </div>
+          <div className="rounded-2xl bg-gradient-to-br from-orange-950/60 to-slate-900 border border-orange-700/40 p-5 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-orange-400">ML Anomaly Years</div>
+            <div className="text-sm font-bold text-white">Anomalies: {(mlData.anomalies?.anomaly_years || []).join(', ') || 'None'}</div>
+            <div className="text-xs text-slate-300">Mean {mlData.anomalies?.mean_rainfall_mm} mm (±{mlData.anomalies?.std_rainfall_mm}) • Dry {mlData.anomalies?.mean_dryspell_days}d</div>
+            <div className="text-[11px] text-slate-400">Model: {mlData.anomalies?.model}</div>
+          </div>
+          <div className="rounded-2xl bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-700/40 p-5 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">ML Analog + Outlook ({mlData.risk_outlook})</div>
+            <div className="text-sm font-bold text-white">{mlData.analogs?.consensus?.message}</div>
+            <div className="text-xs text-slate-300">Top: {(mlData.analogs?.top_analogs || []).map(a => `${a.year} (${a.similarity_pct}%)`).join(' • ')}</div>
+            <div className="text-[11px] text-amber-300">{mlData.advisory}</div>
+          </div>
+        </div>
+      )}
+
       {/* Historical Records Table */}
       <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 space-y-4 shadow-xl">
         <h3 className="text-sm font-bold text-white">5-Year Historical Climatology Archive (Odisha Zone 11)</h3>
@@ -165,6 +201,194 @@ export const HistoricalPage = () => {
           </table>
         </div>
       </div>
+
+      {/* Historical Analysis ML Engine Insights */}
+      {histData?.ml_insights && (
+        <div className="rounded-2xl bg-slate-900/80 border border-indigo-500/40 p-6 space-y-5 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Cpu className="h-5 w-5 text-indigo-400" />
+              <h3 className="text-sm font-bold text-white">
+                Historical Analysis ML Engine
+              </h3>
+              {histData.ml_insights.model_version && (
+                <span className="text-[10px] font-mono text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded-full border border-indigo-700/60">
+                  {histData.ml_insights.model_version}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {histData.ml_insights.status === 'fallback' ? (
+                <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-600/40">
+                  ML service offline · static climatology
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-600/40">
+                  {histData.ml_insights.source || 'ML engine live'}
+                </span>
+              )}
+              {histData.ml_insights.risk_outlook && (
+                <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
+                  histData.ml_insights.risk_outlook === 'HIGH'
+                    ? 'text-rose-300 bg-rose-950/60 border-rose-600/40'
+                    : 'text-amber-300 bg-amber-950/60 border-amber-600/40'
+                }`}>
+                  {histData.ml_insights.risk_outlook} RISK
+                </span>
+              )}
+            </div>
+          </div>
+
+          {histData.ml_insights.status === 'fallback' && histData.ml_insights.message && (
+            <p className="text-[11px] text-amber-300/90 bg-amber-950/30 border border-amber-600/30 rounded-lg px-3 py-2">
+              {histData.ml_insights.message}
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Trend Analysis */}
+            {histData.ml_insights.trend && (
+              <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-orange-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">ML Trend Detection</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] text-slate-400 font-semibold">Rainfall Trend</div>
+                    <div className="text-lg font-black text-orange-300 font-mono">
+                      {histData.ml_insights.trend.rainfall_trend_mm_per_year != null
+                        ? `${histData.ml_insights.trend.rainfall_trend_mm_per_year > 0 ? '+' : ''}${histData.ml_insights.trend.rainfall_trend_mm_per_year} mm/yr`
+                        : '--'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {histData.ml_insights.trend.rainfall_trend_label}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400 font-semibold">Dry-Spell Trend</div>
+                    <div className="text-lg font-black text-rose-300 font-mono">
+                      {histData.ml_insights.trend.dry_spell_trend_days_per_year != null
+                        ? `${histData.ml_insights.trend.dry_spell_trend_days_per_year > 0 ? '+' : ''}${histData.ml_insights.trend.dry_spell_trend_days_per_year} d/yr`
+                        : '--'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      {histData.ml_insights.trend.dry_spell_trend_label}
+                    </div>
+                  </div>
+                </div>
+                {histData.ml_insights.trend.interpretation && (
+                  <p className="text-[11px] text-slate-300 leading-relaxed border-t border-slate-800 pt-2">
+                    {histData.ml_insights.trend.interpretation}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Anomaly Detection */}
+            {histData.ml_insights.anomalies && (
+              <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-rose-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">ML Anomaly Detection</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(histData.ml_insights.anomalies.anomaly_years || []).length > 0 ? (
+                    histData.ml_insights.anomalies.anomaly_years.map((yr) => (
+                      <span key={yr} className="text-[10px] font-mono font-bold text-rose-300 bg-rose-950/60 border border-rose-700/50 px-2 py-1 rounded-lg">
+                        {yr} flagged
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[10px] text-slate-400 font-medium">No statistically anomalous years detected.</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-[11px]">
+                  <div className="text-slate-300"><span className="text-slate-500">Mean:</span> {histData.ml_insights.anomalies.mean_rainfall_mm} mm</div>
+                  <div className="text-slate-300"><span className="text-slate-500">Std:</span> ±{histData.ml_insights.anomalies.std_rainfall_mm} mm</div>
+                  <div className="text-slate-300"><span className="text-slate-500">Mean dry spell:</span> {histData.ml_insights.anomalies.mean_dryspell_days} d</div>
+                  <div className="text-slate-300"><span className="text-slate-500">Std dry spell:</span> ±{histData.ml_insights.anomalies.std_dryspell_days} d</div>
+                </div>
+                {histData.ml_insights.anomalies.model && (
+                  <div className="text-[9px] font-mono text-slate-500">{histData.ml_insights.anomalies.model}</div>
+                )}
+              </div>
+            )}
+
+            {/* Analog Matching */}
+            {histData.ml_insights.analogs && (
+              <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <GitCompare className="h-4 w-4 text-sky-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Historical Analog Matching</span>
+                </div>
+                <div className="space-y-1.5">
+                  {(histData.ml_insights.analogs.top_analogs || []).map((a, i) => (
+                    <div key={a.year} className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-sky-300">{i + 1}</span>
+                        <div>
+                          <div className="text-xs font-bold text-white font-mono">{a.year}</div>
+                          <div className="text-[10px] text-slate-400">{a.monsoon_type} · {a.longest_dry_spell_days}d dry spell</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black font-mono text-emerald-400">{a.similarity_pct}%</span>
+                    </div>
+                  ))}
+                </div>
+                {histData.ml_insights.analogs.consensus?.message && (
+                  <p className="text-[11px] text-sky-200 bg-sky-950/40 border border-sky-700/40 rounded-lg px-3 py-2 leading-relaxed">
+                    {histData.ml_insights.analogs.consensus.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Climatology Stats */}
+            {histData.ml_insights.climatology && (
+              <div className="rounded-2xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">ML Climatology Stats</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] text-slate-400">Mean Seasonal Rainfall</div>
+                    <div className="text-lg font-black text-sky-300 font-mono">{histData.ml_insights.climatology.mean_seasonal_mm} mm</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Deficit-Year Probability</div>
+                    <div className="text-lg font-black text-orange-300 font-mono">{histData.ml_insights.climatology.deficit_year_probability_pct}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Drought Return Period</div>
+                    <div className="text-lg font-black text-amber-300 font-mono">{histData.ml_insights.climatology.drought_return_period_years} yr</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Mean Onset Date</div>
+                    <div className="text-lg font-black text-emerald-300 font-mono">
+                      June {histData.ml_insights.climatology.mean_onset_june_day}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-2">
+                  Range {histData.ml_insights.climatology.min_seasonal_mm}–{histData.ml_insights.climatology.max_seasonal_mm} mm · Max dry spell {histData.ml_insights.climatology.max_dry_spell_days} d · Baseline {histData.ml_insights.climatology.baseline_normal_mm} mm
+                </div>
+              </div>
+            )}
+          </div>
+
+          {histData.ml_insights.advisory && (
+            <div className="rounded-xl bg-gradient-to-r from-indigo-950/70 to-slate-900 border border-indigo-500/40 p-4 flex items-start gap-3">
+              <Sparkles className="h-4 w-4 text-indigo-300 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">ML Advisory Outlook</div>
+                <p className="text-xs text-slate-200 leading-relaxed mt-0.5">{histData.ml_insights.advisory}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );

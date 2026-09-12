@@ -12,6 +12,32 @@ import { notificationLogs, getNotificationStats } from "../data/notifications.js
 import { predictWithML, explainWithML, explainAdvancedWithML, analyzeHistoricalWithML, analyzeSystemHealthWithML } from "../services/mlService.js";
 import { composeAIBroadcast, dispatchAIBroadcast } from "../services/broadcastService.js";
 
+// Build a complete ML PredictionRequest payload from partial frontend input,
+// enriched with local agro-climatic metrics + live climate teleconnections so the
+// FastAPI ML microservice receives every required field.
+const buildMLRequestPayload = (body = {}) => {
+  const loc = findLocation(body.district_name, body.block_name);
+  const m = loc?.metrics || {};
+  const coords = loc?.coordinates || {};
+  return {
+    latitude: coords.lat ?? 20.2961,
+    longitude: coords.lon ?? 85.8245,
+    rainfall: m.rainfall_24h_mm ?? body.rainfall ?? 2.4,
+    temperature: body.temperature ?? m.temperature_c ?? 34.2,
+    humidity: m.humidity_percent ?? body.humidity ?? 65,
+    soil_moisture: body.soil_moisture ?? m.soil_moisture_level ?? "Low",
+    soil_moisture_value: body.soil_moisture_value ?? m.soil_moisture_fraction ?? 0.22,
+    enso: body.enso ?? climateSignals.enso.value,
+    iod: body.iod ?? climateSignals.iod.value,
+    mjo_phase: Math.round(body.mjo_phase ?? climateSignals.mjo.phase),
+    mjo_amplitude: body.mjo_amplitude ?? climateSignals.mjo.amplitude,
+    previous_rainfall: m.rainfall_15d_cumulative_mm ?? body.previous_rainfall ?? 32,
+    rainfall_anomaly: body.rainfall_anomaly ?? m.rainfall_anomaly_percent ?? -24,
+    forecast_horizon: body.forecast_horizon ?? 7,
+    district_name: loc?.district ?? body.district_name,
+    block_name: loc?.block ?? body.block_name
+  };
+};
 
 // 1. Locations
 const getAllLocations = (req, res) => {
@@ -258,17 +284,18 @@ const getClimateSignals = (req, res) => {
 
 // 4. ML Prediction & Explainability
 const postPredict = async (req, res) => {
-  const result = await predictWithML(req.body);
+  const result = await predictWithML(buildMLRequestPayload(req.body));
   res.json(result);
 };
 
 const postExplain = async (req, res) => {
+  const payload = buildMLRequestPayload(req.body);
   // ?mode=advanced -> dynamic XAI v2 (perturbation SHAP + counterfactual + narrative)
   if (req.query.mode === "advanced" || req.body.mode === "advanced") {
-    const result = await explainAdvancedWithML(req.body);
+    const result = await explainAdvancedWithML(payload);
     return res.json(result);
   }
-  const result = await explainWithML(req.body);
+  const result = await explainWithML(payload);
   res.json(result);
 };
 

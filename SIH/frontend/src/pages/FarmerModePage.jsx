@@ -51,7 +51,9 @@ export const FarmerModePage = () => {
     break_probability: 0.68,
     heavy_rain_probability: 0.29,
     expected_rainfall_mm: 54.0,
-    soil_moisture_level: 'Low'
+    soil_moisture_level: 'Low',
+    temperature_c: 31.5,
+    temperature_anomaly: 2.8
   };
 
   // Determine farmer friendly advice text
@@ -121,6 +123,14 @@ export const FarmerModePage = () => {
                 <MapPin className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" />
                 <span>📍 {selectedBlock} ({selectedDistrict})</span>
               </p>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-[10px] font-black text-orange-100 bg-gradient-to-r from-orange-600/80 to-amber-600/80 border border-orange-400/50 rounded-lg px-2 py-0.5 shadow">
+                  🌡️ {m.temperature_c != null ? `${Math.round(m.temperature_c * 10) / 10}°C` : '--°C'}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-100/90">
+                  {t.todayTemp || t.fmTodayTemp || "Real-Time Live Temperature"}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -429,7 +439,7 @@ export const FarmerModePage = () => {
               const totalRain = m.expected_rainfall_mm || 45;
               let rain = idx === 0 ? Math.round(totalRain * 0.32) : idx === 1 ? Math.round(totalRain * 0.28) : idx === 2 ? Math.round(totalRain * 0.22) : idx === 3 ? Math.round(totalRain * 0.12) : idx === 4 ? Math.round(totalRain * 0.06) : 0;
               let icon = rain >= 15 ? "🌧️" : rain >= 8 ? "🌦️" : rain > 0 ? "⛅" : "☀️";
-              return { day: dayName, date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), rain_mm: rain, icon };
+              return { day: dayName, date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), rain_mm: rain, icon, temp_max: Math.round((m.temperature_c || 31) + (idx < 3 ? 1.5 : 0.5)), temp_min: Math.round((m.temperature_c || 31) - 5.5) };
             })).map((day, idx) => (
               <div key={idx} className="p-1.5 rounded-lg bg-slate-950 border border-slate-800/80">
                 <div className="text-[9px] font-sans text-slate-400 font-medium truncate" title={day.date}>
@@ -438,6 +448,10 @@ export const FarmerModePage = () => {
                 <div className="text-sm my-0.5">{day.icon}</div>
                 <div className={`text-[10px] font-black ${day.rain_mm > 0 ? 'text-sky-300' : 'text-slate-500'}`}>
                   {day.rain_mm}<span className="text-[9px] font-medium text-slate-400 ml-0.5">mm</span>
+                </div>
+                <div className="text-[9px] font-black text-orange-300/90">
+                  {day.temp_max != null && <span>{Math.round(day.temp_max)}°</span>}
+                  {day.temp_min != null && <span className="text-slate-400 font-medium ml-0.5">/{Math.round(day.temp_min)}°</span>}
                 </div>
               </div>
             ))}

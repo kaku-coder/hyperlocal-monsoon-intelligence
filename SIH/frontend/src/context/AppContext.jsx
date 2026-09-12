@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchDistricts, fetchBlocks, fetchPanchayats, fetchForecast, fetchMeApi, logoutUserApi, getLocalFallbackBlocks } from '../services/api';
+import { fetchDistricts, fetchBlocks, fetchPanchayats, fetchForecast, fetchMeApi, logoutUserApi, getLocalFallbackBlocks, subscribeWeatherAlertsSSE } from '../services/api';
 
 import locationSocket from '../utils/socketService';
 
@@ -303,6 +303,26 @@ export const AppProvider = ({ children }) => {
 
   const [notificationsList, setNotificationsList] = useState(getSavedNotifications);
 
+  // Audio chime trigger helper
+  const playNotificationSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {}
+  };
+
   const addNotification = (item) => {
     const newNotif = {
       id: item.id || `notif-${Date.now()}`,
@@ -312,6 +332,8 @@ export const AppProvider = ({ children }) => {
       unread: true,
       type: item.type || 'INFO'
     };
+
+    playNotificationSound();
 
     setNotificationsList(prev => {
       const updated = [newNotif, ...prev];
@@ -330,8 +352,27 @@ export const AppProvider = ({ children }) => {
             icon: '/favicon.ico'
           });
         } catch (e) {}
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission();
       }
     }
+  };
+
+  const removeNotification = (id) => {
+    setNotificationsList(prev => {
+      const updated = prev.filter(n => n.id !== id);
+      try {
+        localStorage.setItem('moes_notifications_history', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const clearAllNotifications = () => {
+    setNotificationsList([]);
+    try {
+      localStorage.removeItem('moes_notifications_history');
+    } catch {}
   };
 
   const markAllNotificationsRead = () => {
@@ -341,6 +382,28 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('moes_notifications_history', JSON.stringify(updated));
       } catch {}
       return updated;
+    });
+  };
+
+  const requestNotificationPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        try {
+          return await Notification.requestPermission();
+        } catch (e) {}
+      }
+      return Notification.permission;
+    }
+    return 'unsupported';
+  };
+
+  const triggerTestNotification = () => {
+    addNotification({
+      id: `notif-${Date.now()}`,
+      title: `🚨 Test Alert: ${selectedDistrict} Station`,
+      message: `Real-time heavy monsoon warning test broadcast triggered successfully at ${new Date().toLocaleTimeString()}.`,
+      time: 'Just now',
+      type: 'HEAVY_RAIN'
     });
   };
 
@@ -402,7 +465,11 @@ export const AppProvider = ({ children }) => {
         setIsMobileSidebarOpen,
         notificationsList,
         addNotification,
+        removeNotification,
+        clearAllNotifications,
         markAllNotificationsRead,
+        requestNotificationPermission,
+        triggerTestNotification,
         unreadNotificationCount
       }}
     >

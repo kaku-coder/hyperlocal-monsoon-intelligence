@@ -38,6 +38,9 @@ export const Navbar = () => {
     setIsMobileSidebarOpen,
     notificationsList = [],
     markAllNotificationsRead,
+    removeNotification,
+    clearAllNotifications,
+    triggerTestNotification,
     unreadNotificationCount = 0
   } = useApp();
 
@@ -322,47 +325,88 @@ export const Navbar = () => {
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-1.5 font-bold text-white">
                     <Bell className="h-4 w-4 text-sky-400" />
-                    <span>Notifications & Weather Alerts</span>
+                    <span>Alerts & Notifications</span>
                     {unreadNotificationCount > 0 && (
                       <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded-full font-mono border border-rose-500/30">
                         {unreadNotificationCount} new
                       </span>
                     )}
                   </div>
-                  {unreadNotificationCount > 0 && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={markAllNotificationsRead}
-                      className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold cursor-pointer"
+                      onClick={triggerTestNotification}
+                      className="text-[10px] bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 font-bold px-2 py-0.5 rounded-md border border-sky-500/40 transition cursor-pointer"
+                      title="Trigger test push notification & chime sound"
                     >
-                      Mark all as read
+                      + Test Alert
                     </button>
-                  )}
+                    {unreadNotificationCount > 0 && (
+                      <button
+                        onClick={markAllNotificationsRead}
+                        className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold cursor-pointer"
+                      >
+                        Mark read
+                      </button>
+                    )}
+                    {notificationsList.length > 0 && (
+                      <button
+                        onClick={clearAllNotifications}
+                        className="text-[10px] text-slate-400 hover:text-slate-200 font-semibold cursor-pointer"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
-                  {notificationsList.map(n => (
-                    <div
-                      key={n.id}
-                      className={`p-2.5 rounded-xl border transition-all ${
-                        n.unread
-                          ? 'bg-slate-800/90 border-slate-700 text-slate-200'
-                          : 'bg-slate-950/60 border-slate-800/80 text-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="font-bold text-xs text-white flex items-center gap-1.5">
-                          {n.unread && <span className="h-2 w-2 rounded-full bg-sky-400 shrink-0" />}
-                          <span className={n.type === 'HEAVY_RAIN' ? 'text-rose-300' : n.type === 'DRY_SPELL' ? 'text-amber-300' : 'text-sky-300'}>
-                            {n.title}
-                          </span>
-                        </div>
-                        <span className="text-[9px] text-slate-500 shrink-0 font-mono">{n.time}</span>
-                      </div>
-                      <p className="mt-1 text-[11px] leading-relaxed font-medium">
-                        {n.message}
-                      </p>
+                  {notificationsList.length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 font-medium">
+                      No notifications right now.
+                      <button
+                        onClick={triggerTestNotification}
+                        className="block mx-auto mt-2 text-sky-400 text-xs font-bold hover:underline cursor-pointer"
+                      >
+                        Click to send a test alert
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    notificationsList.map(n => (
+                      <div
+                        key={n.id}
+                        className={`p-2.5 rounded-xl border transition-all relative group ${
+                          n.unread
+                            ? 'bg-slate-800/90 border-slate-700 text-slate-200'
+                            : 'bg-slate-950/60 border-slate-800/80 text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-bold text-xs text-white flex items-center gap-1.5 pr-4">
+                            {n.unread && <span className="h-2 w-2 rounded-full bg-sky-400 shrink-0" />}
+                            <span className={n.type === 'HEAVY_RAIN' ? 'text-rose-300' : n.type === 'DRY_SPELL' ? 'text-amber-300' : 'text-sky-300'}>
+                              {n.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[9px] text-slate-500 font-mono">{n.time}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (removeNotification) removeNotification(n.id);
+                              }}
+                              className="text-slate-500 hover:text-rose-400 p-0.5 rounded transition cursor-pointer"
+                              title="Delete notification"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed font-medium">
+                          {n.message}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <div className="border-t border-slate-800 pt-2 text-center">
@@ -373,7 +417,7 @@ export const Navbar = () => {
                     }}
                     className="w-full text-center text-xs font-bold text-sky-400 hover:text-sky-300 py-1 transition cursor-pointer"
                   >
-                    View All Notifications & Dispatch Center →
+                    View All Notifications & Broadcast Dispatcher →
                   </button>
                 </div>
               </div>

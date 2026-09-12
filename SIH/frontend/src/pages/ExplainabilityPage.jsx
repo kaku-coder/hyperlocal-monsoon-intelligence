@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { fetchExplainability } from '../services/api';
+import { fetchExplainability, fetchExplainAdvanced } from '../services/api';
 import {
   ResponsiveContainer,
   BarChart,
@@ -26,24 +26,35 @@ import { RiskBadge } from '../components/common/RiskBadge';
 export const ExplainabilityPage = () => {
   const { selectedBlock, selectedDistrict, forecastData } = useApp();
   const [explainData, setExplainData] = useState(null);
+  const [advData, setAdvData] = useState(null);
+  const [mode, setMode] = useState('advanced');
 
   useEffect(() => {
     const loadExplanation = async () => {
+      const metrics = forecastData?.metrics || {};
       const payload = {
+        latitude: 20.71, longitude: 86.78,
+        rainfall: 18.5, humidity: metrics.humidity_percent ?? 65,
         district_name: selectedDistrict,
         block_name: selectedBlock,
-        rainfall_anomaly: -24.0,
-        temperature: 34.2,
-        soil_moisture: 'Low',
+        rainfall_anomaly: metrics.rainfall_anomaly_percent ?? -24.0,
+        temperature: metrics.temperature_c ?? 34.2,
+        soil_moisture: metrics.soil_moisture_level || 'Low',
+        soil_moisture_value: metrics.soil_moisture_fraction ?? 0.22,
+        previous_rainfall: 32.0, forecast_horizon: 7,
         enso: 0.8,
         iod: -0.4,
-        mjo_phase: 4
+        mjo_phase: 4, mjo_amplitude: 1.5
       };
-      const data = await fetchExplainability(payload);
-      setExplainData(data);
+      const [basic, adv] = await Promise.all([
+        fetchExplainability(payload, 'basic'),
+        fetchExplainAdvanced(payload)
+      ]);
+      if (basic) setExplainData(basic);
+      if (adv?.status === 'success') { setAdvData(adv); setExplainData(adv); }
     };
     loadExplanation();
-  }, [selectedBlock, selectedDistrict]);
+  }, [selectedBlock, selectedDistrict, forecastData]);
 
   const contributions = explainData?.feature_contributions || [
     { label: "Recent Rainfall Deficit", contribution_percent: 21.0, description: "Negative rainfall departure (-24%) indicates weak early monsoon convective buildup." },
@@ -55,6 +66,10 @@ export const ExplainabilityPage = () => {
   ];
 
   const sortedContributions = [...contributions].sort((a, b) => b.contribution_percent - a.contribution_percent);
+
+  const targetProbPct = explainData ? Math.round(explainData.target_probability * 100) : 68;
+  const baseProbPct = explainData ? Math.round(explainData.base_probability * 100) : 25;
+  const mlDeltaPct = explainData ? Math.round((explainData.target_probability - explainData.base_probability) * 100) : 43;
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
@@ -85,7 +100,7 @@ export const ExplainabilityPage = () => {
             Target Predicted Risk Metric
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white">
-            Overall Break / Dry Spell Risk: <span className="text-orange-400 font-mono">68%</span>
+            Overall Break / Dry Spell Risk: <span className="text-orange-400 font-mono">{targetProbPct}%</span>
           </h2>
           <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
             {explainData?.explanation_summary || 
@@ -95,8 +110,8 @@ export const ExplainabilityPage = () => {
 
         <div className="flex-shrink-0 bg-slate-950/80 border border-slate-800 p-4 rounded-2xl text-center space-y-1">
           <span className="text-[10px] text-slate-400 uppercase font-bold">Base Climatology</span>
-          <div className="text-xl font-bold text-slate-300 font-mono">25%</div>
-          <span className="text-[10px] text-orange-400 font-semibold font-mono">+43% ML Delta</span>
+          <div className="text-xl font-bold text-slate-300 font-mono">{baseProbPct}%</div>
+          <span className="text-[10px] text-orange-400 font-semibold font-mono">+{mlDeltaPct}% ML Delta</span>
         </div>
       </div>
 
@@ -145,6 +160,29 @@ export const ExplainabilityPage = () => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Advanced XAI: Counterfactual + Narrative + Calibration */}
+      {advData && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="rounded-2xl bg-emerald-950/40 border border-emerald-600/40 p-4 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">ML Counterfactual (What-If)</div>
+            <div className="text-xs text-white font-semibold">{advData.counterfactual?.message}</div>
+            <div className="text-[11px] font-mono text-slate-300">Best: {advData.counterfactual?.recommended?.change} → {Math.round((advData.counterfactual?.recommended?.resulting_break ?? 0) * 100)}%</div>
+          </div>
+          <div className="rounded-2xl bg-sky-950/40 border border-sky-600/40 p-4 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-sky-300">ML Narrative (EN/HI/OR)</div>
+            <div className="text-xs text-slate-200">{advData.narrative?.en}</div>
+            <div className="text-xs text-slate-400">{advData.narrative?.hi}</div>
+            <div className="text-xs text-slate-400">{advData.narrative?.or}</div>
+          </div>
+          <div className="rounded-2xl bg-indigo-950/40 border border-indigo-600/40 p-4 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">ML Calibration</div>
+            <div className="text-xs text-white font-mono">Confidence {(advData.calibration?.confidence * 100)?.toFixed(0)}%</div>
+            <div className="text-[11px] text-slate-300">{advData.calibration?.note}</div>
+            <div className="text-[10px] font-mono text-slate-400">Model: {advData.model_version} • {advData.source || 'FastAPI-ML-XAI-v2'}</div>
+          </div>
+        </div>
+      )}
 
       {/* Detailed Contribution Explanations Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
