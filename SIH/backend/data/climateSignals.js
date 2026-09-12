@@ -74,3 +74,5 @@ const climateSignals = {
 
 export default climateSignals;
 
+
+/** Teleconnections: ENSO, IOD, MJO & Equatorial Waves Schema */
