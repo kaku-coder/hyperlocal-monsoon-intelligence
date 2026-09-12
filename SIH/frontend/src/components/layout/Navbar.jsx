@@ -10,7 +10,8 @@ import {
   Activity,
   User,
   LogOut,
-  LogIn
+  LogIn,
+  Search
 } from 'lucide-react';
 
 export const Navbar = () => {
