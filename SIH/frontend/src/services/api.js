@@ -438,9 +438,10 @@ export const fetchSystemStatus = async () => {
   return null;
 };
 
-export const fetchExplainability = async (payload) => {
+export const fetchExplainability = async (payload, mode = 'basic') => {
   try {
-    const res = await fetch(`${API_BASE_URL}/explain`, {
+    const url = mode === 'advanced' ? `${API_BASE_URL}/explain/advanced` : `${API_BASE_URL}/explain`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -452,6 +453,27 @@ export const fetchExplainability = async (payload) => {
     console.warn("Using fallback explainability", err);
   }
   return null;
+};
+
+export const fetchExplainAdvanced = async (payload) => fetchExplainability(payload, 'advanced');
+
+export const fetchHistoricalML = async (payload) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/historical/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("fetchHistoricalML failed", err);
+  }
+  return null;
+};
+
+export const fetchSystemHealthML = async () => {
+  // ml_health is embedded in system-status; this helper just returns full status
+  return fetchSystemStatus();
 };
 
 // --- REAL-TIME WEATHER ALERTS (Nowcast → SMS → SSE Broadcast) ---

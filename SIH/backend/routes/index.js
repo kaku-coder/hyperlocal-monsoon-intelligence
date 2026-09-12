@@ -19,10 +19,11 @@ router.get("/districts", controllers.getDistrictsList);
 router.get("/blocks/:district", controllers.getBlocksForDistrict);
 router.get("/panchayats/:block", controllers.getPanchayatsForBlock);
 
-// Forecast & Predictions
+ // Forecast & Predictions
 router.get("/forecast/:locationId", controllers.getForecastForLocation);
 router.post("/predict", controllers.postPredict);
 router.post("/explain", controllers.postExplain);
+router.post("/explain/advanced", controllers.postExplainAdvanced);
 
 // Climate Signals
 router.get("/climate-signals", controllers.getClimateSignals);
@@ -31,8 +32,9 @@ router.get("/climate-signals", controllers.getClimateSignals);
 router.get("/crops", controllers.getCropsList);
 router.post("/advisory", controllers.postGenerateAdvisory);
 
-// Historical Analysis
+ // Historical Analysis + Historical ML
 router.get("/historical/:locationId", controllers.getHistoricalData);
+router.post("/historical/analyze", controllers.postHistoricalML);
 
 // GIS GeoJSON Layers
 router.get("/geojson", controllers.getGeoJSONLayer);
@@ -46,7 +48,7 @@ router.get("/notifications/stats", controllers.getNotificationStatsHandler);
 router.post("/notifications/send", controllers.postSendNotification);
 router.post("/notifications/compose", controllers.postComposeBroadcast);
 
-// System Status
+ // System Status + System Health ML is embedded in getSystemStatus (ml_health)
 router.get("/system-status", controllers.getSystemStatus);
 
 export default router;

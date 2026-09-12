@@ -9,7 +9,7 @@ import historicalData from "../data/historical.js";
 import { getOdishaGeoJSON } from "../data/geoJson.js";
 import { officerAlerts, getAlerts, acknowledgeAlert } from "../data/alerts.js";
 import { notificationLogs, getNotificationStats } from "../data/notifications.js";
-import { predictWithML, explainWithML } from "../services/mlService.js";
+import { predictWithML, explainWithML, explainAdvancedWithML, analyzeHistoricalWithML, analyzeSystemHealthWithML } from "../services/mlService.js";
 import { composeAIBroadcast, dispatchAIBroadcast } from "../services/broadcastService.js";
 
 
@@ -44,70 +44,81 @@ const getPanchayatsForBlock = (req, res) => {
 
 // 2. Real-Time Live Forecast Controller
 const getForecastForLocation = async (req, res) => {
-  const { locationId } = req.params;
-  const horizon = parseInt(req.query.horizon, 10) || 7;
-  const selectedPanchayat = req.query.panchayat || req.query.gp || null;
-  const loc = getLocationById(locationId);
-
-  const m = loc.metrics;
-  const lat = loc.coordinates?.lat || 20.296;
-  const lon = loc.coordinates?.lon || 85.824;
-
-  let liveDailyStrip = null;
-  let liveExpectedRain = null;
-  let liveTempAvg = null;
-
-  // Real-Time Live Weather API Fetch (Open-Meteo Meteorological Service)
   try {
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`;
-    const apiRes = await fetch(weatherUrl, { signal: AbortSignal.timeout(3500) });
-    if (apiRes.ok) {
-      const weatherData = await apiRes.json();
-      if (weatherData?.daily?.time && weatherData.daily.time.length >= 7) {
-        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const times = weatherData.daily.time;
-        const precips = weatherData.daily.precipitation_sum || [];
-        const probs = weatherData.daily.precipitation_probability_max || [];
-        const codes = weatherData.daily.weathercode || [];
-        const tempMax = weatherData.daily.temperature_2m_max || [];
-        const tempMin = weatherData.daily.temperature_2m_min || [];
+    const { locationId } = req.params;
+    const horizon = parseInt(req.query.horizon, 10) || 7;
+    const selectedPanchayat = req.query.panchayat || req.query.gp || null;
+    const loc = getLocationById(locationId);
 
-        let sum7d = 0;
-        liveDailyStrip = times.slice(0, 7).map((tStr, idx) => {
-          const d = new Date(tStr + "T00:00:00+05:30");
-          const dayName = idx === 0 ? "Today" : daysOfWeek[d.getDay()];
-          const rain = Math.round((precips[idx] || 0) * 10) / 10;
-          sum7d += rain;
-          const prob = probs[idx] !== undefined && probs[idx] !== null ? probs[idx] : Math.min(95, Math.round(rain * 8 + 15));
-          const code = codes[idx] || 0;
+    const m = loc?.metrics || {
+      expected_rainfall_7d: 45, expected_rainfall_14d: 90, expected_rainfall_21d: 130, expected_rainfall_30d: 160,
+      onset_probability: 0.7, break_probability: 0.3, heavy_rain_probability: 0.2, confidence: 0.8,
+      temperature_c: 32, humidity_percent: 75, soil_moisture_level: 'Moderate', soil_moisture_fraction: 0.3,
+      rainfall_anomaly_percent: 0, dominant_risk: 'LOW', risk_factor: 'Normal'
+    };
+    const lat = loc?.coordinates?.lat || 20.296;
+    const lon = loc?.coordinates?.lon || 85.824;
 
-          let icon = "☀️";
-          if (code >= 95) icon = "⛈️";
-          else if (code >= 80 || rain >= 15) icon = "🌧️";
-          else if (code >= 51 || rain >= 5) icon = "🌦️";
-          else if (code >= 1 || rain > 0) icon = "⛅";
+    let liveDailyStrip = null;
+    let liveExpectedRain = null;
+    let liveTempAvg = null;
 
-          return {
-            day: dayName,
-            date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            rain_mm: rain,
-            icon,
-            probability: prob,
-            temp_max: tempMax[idx] || 33,
-            temp_min: tempMin[idx] || 25,
-            wmo_code: code
-          };
-        });
+    // Real-Time Live Weather API Fetch (Open-Meteo Meteorological Service)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    try {
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`;
+      const apiRes = await fetch(weatherUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
-        liveExpectedRain = Math.round(sum7d);
-        if (tempMax[0] && tempMin[0]) {
-          liveTempAvg = Math.round(((tempMax[0] + tempMin[0]) / 2) * 10) / 10;
+      if (apiRes && apiRes.ok) {
+        const weatherData = await apiRes.json();
+        if (weatherData?.daily?.time && weatherData.daily.time.length >= 7) {
+          const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const times = weatherData.daily.time;
+          const precips = weatherData.daily.precipitation_sum || [];
+          const probs = weatherData.daily.precipitation_probability_max || [];
+          const codes = weatherData.daily.weathercode || [];
+          const tempMax = weatherData.daily.temperature_2m_max || [];
+          const tempMin = weatherData.daily.temperature_2m_min || [];
+
+          let sum7d = 0;
+          liveDailyStrip = times.slice(0, 7).map((tStr, idx) => {
+            const d = new Date(tStr + "T00:00:00+05:30");
+            const dayName = idx === 0 ? "Today" : daysOfWeek[d.getDay()];
+            const rain = Math.round((precips[idx] || 0) * 10) / 10;
+            sum7d += rain;
+            const prob = probs[idx] !== undefined && probs[idx] !== null ? probs[idx] : Math.min(95, Math.round(rain * 8 + 15));
+            const code = codes[idx] || 0;
+
+            let icon = "☀️";
+            if (code >= 95) icon = "⛈️";
+            else if (code >= 80 || rain >= 15) icon = "🌧️";
+            else if (code >= 51 || rain >= 5) icon = "🌦️";
+            else if (code >= 1 || rain > 0) icon = "⛅";
+
+            return {
+              day: dayName,
+              date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+              rain_mm: rain,
+              icon,
+              probability: prob,
+              temp_max: tempMax[idx] || 33,
+              temp_min: tempMin[idx] || 25,
+              wmo_code: code
+            };
+          });
+
+          liveExpectedRain = Math.round(sum7d);
+          if (tempMax[0] && tempMin[0]) {
+            liveTempAvg = Math.round(((tempMax[0] + tempMin[0]) / 2) * 10) / 10;
+          }
         }
       }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn("Open-Meteo live API fallback to local metrics for", loc?.block, err.message);
     }
-  } catch (err) {
-    console.warn("Open-Meteo live API fallback to local metrics for", loc.block, err.message);
-  }
 
   // Fallback for daily strip if network API timed out
   if (!liveDailyStrip) {
@@ -230,6 +241,10 @@ const getForecastForLocation = async (req, res) => {
     generated_at: new Date().toISOString(),
     is_prototype: false
   });
+  } catch (err) {
+    console.error("getForecastForLocation master error:", err.message);
+    res.status(500).json({ status: "error", message: err.message });
+  }
 };
 
 // 3. Climate Signals
@@ -248,7 +263,17 @@ const postPredict = async (req, res) => {
 };
 
 const postExplain = async (req, res) => {
+  // ?mode=advanced -> dynamic XAI v2 (perturbation SHAP + counterfactual + narrative)
+  if (req.query.mode === "advanced" || req.body.mode === "advanced") {
+    const result = await explainAdvancedWithML(req.body);
+    return res.json(result);
+  }
   const result = await explainWithML(req.body);
+  res.json(result);
+};
+
+const postExplainAdvanced = async (req, res) => {
+  const result = await explainAdvancedWithML(req.body);
   res.json(result);
 };
 
@@ -270,10 +295,27 @@ const postGenerateAdvisory = (req, res) => {
   res.json({ status: "success", data: advisory });
 };
 
-// 6. Historical Data
-const getHistoricalData = (req, res) => {
+// 6. Historical Data + Historical ML
+const getHistoricalData = async (req, res) => {
   const { locationId } = req.params;
   const loc = getLocationById(locationId);
+  // Enrich with Historical Analysis ML (trend + anomaly + analog + climatology)
+  let ml_insights = null;
+  try {
+    ml_insights = await analyzeHistoricalWithML({
+      yearly_records: historicalData.yearly_records,
+      current: {
+        rainfall_anomaly: loc.metrics?.rainfall_anomaly_percent ?? -24.0,
+        dry_spell_days: 9,
+        enso: 0.8,
+        iod: -0.4
+      },
+      district_name: loc.district,
+      block_name: loc.block
+    });
+  } catch (e) {
+    ml_insights = { status: "fallback", message: e.message };
+  }
 
   res.json({
     status: "success",
@@ -285,8 +327,16 @@ const getHistoricalData = (req, res) => {
     baseline: historicalData.baseline,
     yearly_records: historicalData.yearly_records,
     block_comparisons: historicalData.block_comparisons,
+    ml_insights,
     is_prototype: true
   });
+};
+
+const postHistoricalML = async (req, res) => {
+  const { yearly_records, current, district_name, block_name } = req.body || {};
+  const records = yearly_records || historicalData.yearly_records;
+  const result = await analyzeHistoricalWithML({ yearly_records: records, current, district_name, block_name });
+  res.json(result);
 };
 
 // 7. GeoJSON Risk Map Layer
@@ -378,15 +428,9 @@ const postComposeBroadcast = async (req, res) => {
   }
 };
 
-// 10. System Status
-const getSystemStatus = (req, res) => {
-  res.json({
-    status: "operational",
-    system_name: "Hyperlocal Monsoon Onset & Break Prediction System",
-    organization: "Ministry of Earth Sciences (MoES) / NCMRWF",
-    timestamp: new Date().toISOString(),
-    last_model_run: "Today, 06:00 UTC (Run-06Z)",
-    subsystems: [
+ // 10. System Status + System Health ML
+const getSystemStatus = async (req, res) => {
+  const subsystems = [
       { name: "Regional Weather Data (IMD/NCMRWF Grid)", status: "AVAILABLE", latency_ms: 38, type: "Data Feed" },
       { name: "Climate Signals (ENSO/IOD/MJO)", status: "AVAILABLE", latency_ms: 45, type: "Teleconnection Index" },
       { name: "Geospatial Boundary Engine (Odisha Blocks)", status: "AVAILABLE", latency_ms: 12, type: "GIS Engine" },
@@ -394,7 +438,21 @@ const getSystemStatus = (req, res) => {
       { name: "Agro-Meteorological Advisory Engine", status: "OPERATIONAL", latency_ms: 15, type: "Expert Rule Matrix" },
       { name: "SMS / WhatsApp Farmer Dispatch Gateway", status: "SIMULATED", latency_ms: 110, type: "Broadcast Service" },
       { name: "Database & Historical Climatology Cache", status: "CONNECTED", latency_ms: 8, type: "MongoDB-Compatible" }
-    ],
+    ];
+  let ml_health = null;
+  try {
+    ml_health = await analyzeSystemHealthWithML({ subsystems });
+  } catch (e) {
+    ml_health = { status: "fallback", message: e.message };
+  }
+  res.json({
+    status: "operational",
+    system_name: "Hyperlocal Monsoon Onset & Break Prediction System",
+    organization: "Ministry of Earth Sciences (MoES) / NCMRWF",
+    timestamp: new Date().toISOString(),
+    last_model_run: "Today, 06:00 UTC (Run-06Z)",
+    subsystems,
+    ml_health,
     governance: {
       is_prototype: true,
       data_label: "Demo & Simulated Agro-Meteorological Data",
@@ -460,9 +518,11 @@ export {
   getClimateSignals,
   postPredict,
   postExplain,
+  postExplainAdvanced,
   getCropsList,
   postGenerateAdvisory,
   getHistoricalData,
+  postHistoricalML,
   getGeoJSONLayer,
   getAlertsFeed,
   postAcknowledgeAlert,

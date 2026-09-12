@@ -267,6 +267,99 @@ export const AppProvider = ({ children }) => {
     locationSocket.changeLocation({ district: d, block: b, panchayat: p, locationId: id });
   };
 
+  // Centralized Persistent Notification Engine
+  const getSavedNotifications = () => {
+    try {
+      const saved = localStorage.getItem('moes_notifications_history');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'notif-1',
+        title: 'Heavy Rain Warning (Mahakalapada)',
+        message: 'High probability of convective squalls (>65mm) in delta tracts within 12h.',
+        time: '15 mins ago',
+        unread: true,
+        type: 'HEAVY_RAIN'
+      },
+      {
+        id: 'notif-2',
+        title: 'High Dry-Spell Alert (Rajkanika)',
+        message: 'Rainfall deficit (-24%) combined with El Niño. Delayed sowing recommended.',
+        time: '25 mins ago',
+        unread: true,
+        type: 'DRY_SPELL'
+      },
+      {
+        id: 'notif-3',
+        title: 'SMS Alert Gateway Active',
+        message: 'Logged in successfully. Real-time weather alerts enabled via SMS.',
+        time: '1 hour ago',
+        unread: true,
+        type: 'INFO'
+      }
+    ];
+  };
+
+  const [notificationsList, setNotificationsList] = useState(getSavedNotifications);
+
+  const addNotification = (item) => {
+    const newNotif = {
+      id: item.id || `notif-${Date.now()}`,
+      title: item.title || 'MoES Weather Alert',
+      message: item.message || '',
+      time: item.time || 'Just now',
+      unread: true,
+      type: item.type || 'INFO'
+    };
+
+    setNotificationsList(prev => {
+      const updated = [newNotif, ...prev];
+      try {
+        localStorage.setItem('moes_notifications_history', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    // Native Browser Push Notification
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(newNotif.title, {
+            body: newNotif.message,
+            icon: '/favicon.ico'
+          });
+        } catch (e) {}
+      }
+    }
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotificationsList(prev => {
+      const updated = prev.map(n => ({ ...n, unread: false }));
+      try {
+        localStorage.setItem('moes_notifications_history', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const unreadNotificationCount = notificationsList.filter(n => n.unread).length;
+
+  // Live SSE Weather Alert Subscription in AppContext
+  useEffect(() => {
+    const unsub = subscribeWeatherAlertsSSE((payload) => {
+      addNotification({
+        id: `notif-${Date.now()}`,
+        title: `🚨 ${payload.district || 'MoES'} Weather Broadcast`,
+        message: payload.message_en || 'Moderate to heavy monsoon showers expected within 12h.',
+        time: 'Just now',
+        type: payload.severity || 'HEAVY_RAIN'
+      });
+    });
+    return unsub;
+  }, []);
+
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
@@ -306,7 +399,11 @@ export const AppProvider = ({ children }) => {
         mapLocation,
         setMapLocation,
         isMobileSidebarOpen,
-        setIsMobileSidebarOpen
+        setIsMobileSidebarOpen,
+        notificationsList,
+        addNotification,
+        markAllNotificationsRead,
+        unreadNotificationCount
       }}
     >
       {children}

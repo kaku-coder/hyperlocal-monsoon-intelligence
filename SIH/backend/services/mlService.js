@@ -182,9 +182,59 @@ const fetchNowcast = async (requestPayload) => {
   };
 };
 
+const explainAdvancedWithML = async (requestPayload) => {
+  try {
+    const response = await fetch(`${ML_SERVICE_URL}/explain/advanced`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestPayload)
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return { ...data, source: "FastAPI-ML-XAI-v2" };
+    }
+  } catch (err) {}
+  // fallback to basic explainer
+  const basic = await explainWithML(requestPayload);
+  return { ...basic, model_version: "xai-v2.0-fallback", counterfactual: null, narrative: null, calibration: null, source: "Embedded-XAI-Fallback" };
+};
+
+const analyzeHistoricalWithML = async ({ yearly_records, current, district_name, block_name }) => {
+  try {
+    const response = await fetch(`${ML_SERVICE_URL}/historical/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ yearly_records, current, district_name, block_name })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return { ...data, source: "FastAPI-ML-Historical" };
+    }
+  } catch (err) {}
+  return { status: "fallback", source: "Embedded-Historical-Fallback", model_version: "historical-ml-fallback", message: "ML service unreachable, using static climatology." };
+};
+
+const analyzeSystemHealthWithML = async ({ subsystems, recent_break_probabilities }) => {
+  try {
+    const response = await fetch(`${ML_SERVICE_URL}/system/health-ml`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subsystems, recent_break_probabilities })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return { ...data, source: "FastAPI-ML-SystemHealth" };
+    }
+  } catch (err) {}
+  return { status: "fallback", source: "Embedded-Health-Fallback", model_version: "system-health-ml-fallback" };
+};
+
 export {
   predictWithML,
   explainWithML,
+  explainAdvancedWithML,
+  analyzeHistoricalWithML,
+  analyzeSystemHealthWithML,
   fetchNowcast
 };
 

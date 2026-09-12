@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { 
-  CloudRain, 
-  MapPin, 
-  Sprout, 
-  ShieldCheck, 
-  Bell, 
+import {
+  CloudRain,
+  MapPin,
+  Sprout,
+  ShieldCheck,
+  Bell,
   ChevronRight,
   Activity,
   User,
@@ -35,10 +35,14 @@ export const Navbar = () => {
     changeLocation,
     loadingForecast,
     isMobileSidebarOpen,
-    setIsMobileSidebarOpen
+    setIsMobileSidebarOpen,
+    notificationsList = [],
+    markAllNotificationsRead,
+    unreadNotificationCount = 0
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
 
   const handleDistrictChange = (e) => {
     const newDistrict = e.target.value;
@@ -99,7 +103,7 @@ export const Navbar = () => {
             blockName = mainPo.Block || mainPo.Name;
             locationName = mainPo.Name;
           }
-        } catch (e) {}
+        } catch (e) { }
       } else {
         try {
           const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Odisha+India&format=json&limit=1`);
@@ -114,7 +118,7 @@ export const Navbar = () => {
               }
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       changeLocation(districtName || selectedDistrict, blockName || selectedBlock, null, locationName);
@@ -204,7 +208,7 @@ export const Navbar = () => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-3 sm:px-6 gap-2 min-w-0 w-full">
-        
+
         {/* Left: MoES / NCMRWF Brand Identity & Mobile Hamburger Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Mobile Hamburger Menu Toggle */}
@@ -216,7 +220,7 @@ export const Navbar = () => {
             {isMobileSidebarOpen ? <X className="h-5 w-5 text-sky-400" /> : <Menu className="h-5 w-5 text-sky-400" />}
           </button>
 
-          <div 
+          <div
             onClick={() => setActiveTab('landing')}
             className="flex items-center gap-3 cursor-pointer group"
           >
@@ -245,7 +249,7 @@ export const Navbar = () => {
 
         {/* Right: Mode Switcher, Language & Auth Button (ALWAYS VISIBLE & UNCLIPPED) */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto z-10">
-          
+
           {/* Toggle between Officer Command Center and Farmer Mode */}
           {activeTab === 'farmer-mode' ? (
             <button
@@ -270,40 +274,111 @@ export const Navbar = () => {
           <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs shrink-0">
             <button
               onClick={() => setFarmerLanguage('en')}
-              className={`px-2 py-1 rounded font-medium transition-colors ${
-                farmerLanguage === 'en' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded font-medium transition-colors ${farmerLanguage === 'en' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                }`}
             >
               EN
             </button>
             <button
               onClick={() => setFarmerLanguage('hi')}
-              className={`px-2 py-1 rounded font-medium transition-colors ${
-                farmerLanguage === 'hi' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded font-medium transition-colors ${farmerLanguage === 'hi' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                }`}
             >
               हिन्दी
             </button>
             <button
               onClick={() => setFarmerLanguage('or')}
-              className={`px-2 py-1 rounded font-medium font-odia transition-colors ${
-                farmerLanguage === 'or' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-2 py-1 rounded font-medium font-odia transition-colors ${farmerLanguage === 'or' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                }`}
             >
               ଓଡ଼ିଆ
             </button>
           </div>
 
-          {/* Alerts Bell */}
-          <button
-            onClick={() => setActiveTab('alerts')}
-            className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-colors cursor-pointer shrink-0"
-            title="Active Meteorological Alerts"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500 animate-ping" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
-          </button>
+          {/* Alerts Bell & Interactive Dropdown Menu */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => {
+                setShowNotificationMenu(!showNotificationMenu);
+                setShowProfileMenu(false);
+              }}
+              className="relative p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
+              title="Active Meteorological Alerts & Notifications"
+            >
+              <Bell className="h-4 w-4 text-sky-400" />
+              {unreadNotificationCount > 0 && (
+                <>
+                  <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-rose-500 animate-ping" />
+                  <span className="absolute top-1 right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-white">
+                    {unreadNotificationCount}
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Notification Dropdown Popover List */}
+            {showNotificationMenu && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-2 text-xs z-50 animate-in fade-in slide-in-from-top-2 duration-150 p-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-1.5 font-bold text-white">
+                    <Bell className="h-4 w-4 text-sky-400" />
+                    <span>Notifications & Weather Alerts</span>
+                    {unreadNotificationCount > 0 && (
+                      <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded-full font-mono border border-rose-500/30">
+                        {unreadNotificationCount} new
+                      </span>
+                    )}
+                  </div>
+                  {unreadNotificationCount > 0 && (
+                    <button
+                      onClick={markAllNotificationsRead}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold cursor-pointer"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                  {notificationsList.map(n => (
+                    <div
+                      key={n.id}
+                      className={`p-2.5 rounded-xl border transition-all ${
+                        n.unread
+                          ? 'bg-slate-800/90 border-slate-700 text-slate-200'
+                          : 'bg-slate-950/60 border-slate-800/80 text-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-bold text-xs text-white flex items-center gap-1.5">
+                          {n.unread && <span className="h-2 w-2 rounded-full bg-sky-400 shrink-0" />}
+                          <span className={n.type === 'HEAVY_RAIN' ? 'text-rose-300' : n.type === 'DRY_SPELL' ? 'text-amber-300' : 'text-sky-300'}>
+                            {n.title}
+                          </span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 shrink-0 font-mono">{n.time}</span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-relaxed font-medium">
+                        {n.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-slate-800 pt-2 text-center">
+                  <button
+                    onClick={() => {
+                      setActiveTab('notifications');
+                      setShowNotificationMenu(false);
+                    }}
+                    className="w-full text-center text-xs font-bold text-sky-400 hover:text-sky-300 py-1 transition cursor-pointer"
+                  >
+                    View All Notifications & Dispatch Center →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Auth State Button */}
           {isLoggedIn ? (
