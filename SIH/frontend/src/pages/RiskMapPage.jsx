@@ -283,10 +283,12 @@ export const RiskMapPage = () => {
 
   const handleSearch = async (e) => {
     e?.preventDefault();
-    if (pincode.length !== 6) {
-      setStatus(lang === 'hi' ? '6 अंकों का पिनकोड डालें' : lang === 'or' ? '୬ ଅଙ୍କ ପିନକୋଡ୍ ଦିଅନ୍ତୁ' : 'Enter 6-digit pincode');
+    const query = pincode.trim();
+    if (!query) {
+      setStatus(lang === 'hi' ? 'स्थान या पिनकोड लिखें' : lang === 'or' ? 'ସ୍ଥାନ କିମ୍ବା ପିନକୋଡ୍ ଲେଖନ୍ତୁ' : 'Enter place name or pincode');
       return;
     }
+
     setLoading(true);
     setStatus(lang === 'hi' ? 'खोज रहे हैं...' : lang === 'or' ? 'ସନ୍ଧାନ କରୁଛି...' : 'Searching...');
     isPincodeSearchRef.current = true;
@@ -294,48 +296,86 @@ export const RiskMapPage = () => {
     try {
       let lat = null;
       let lon = null;
-      let locationName = '';
+      let locationName = query;
       let districtName = '';
       let blockName = '';
       let postOfficesList = [];
+      const isPincode = /^\d{6}$/.test(query);
 
-      // 1. Fetch official India Post details from Postal Pincode API
-      try {
-        const pinRes = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-        const pinData = await pinRes.json();
-        if (pinData[0]?.Status === 'Success' && pinData[0]?.PostOffice?.length) {
-          postOfficesList = pinData[0].PostOffice;
-          const mainPo = postOfficesList[0];
-          districtName = normalizeDistrictName(mainPo.District);
-          blockName = mainPo.Block || mainPo.Name;
-          locationName = mainPo.Name;
-        }
-      } catch (err) {
-        console.warn('Postal pincode API error:', err);
-      }
-
-      // 2. Fetch coordinates from OpenStreetMap Nominatim
-      const geoQueries = [
-        `https://nominatim.openstreetmap.org/search?q=${pincode}+India&format=json&limit=1`,
-        locationName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null,
-        blockName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(blockName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null
-      ].filter(Boolean);
-
-      for (const queryUrl of geoQueries) {
+      if (isPincode) {
+        // 1. Fetch official India Post details for Pincode
         try {
-          const nomRes = await fetch(queryUrl);
-          const nomData = await nomRes.json();
-          if (nomData && nomData.length) {
-            lat = parseFloat(nomData[0].lat);
-            lon = parseFloat(nomData[0].lon);
-            break;
+          const pinRes = await fetch(`https://api.postalpincode.in/pincode/${query}`);
+          const pinData = await pinRes.json();
+          if (pinData[0]?.Status === 'Success' && pinData[0]?.PostOffice?.length) {
+            postOfficesList = pinData[0].PostOffice;
+            const mainPo = postOfficesList[0];
+            districtName = normalizeDistrictName(mainPo.District);
+            blockName = mainPo.Block || mainPo.Name;
+            locationName = mainPo.Name;
           }
-        } catch (e) {
-          console.warn('Nominatim query error:', e);
+        } catch (err) {
+          console.warn('Postal pincode API error:', err);
         }
+
+        // Fetch coordinates from OpenStreetMap Nominatim for pincode
+        const geoQueries = [
+          `https://nominatim.openstreetmap.org/search?q=${query}+India&format=json&limit=1`,
+          locationName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null,
+          blockName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(blockName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null
+        ].filter(Boolean);
+
+        for (const queryUrl of geoQueries) {
+          try {
+            const nomRes = await fetch(queryUrl);
+            const nomData = await nomRes.json();
+            if (nomData && nomData.length) {
+              lat = parseFloat(nomData[0].lat);
+              lon = parseFloat(nomData[0].lon);
+              break;
+            }
+          } catch (e) {
+            console.warn('Nominatim query error:', e);
+          }
+        }
+
+        if (!districtName) districtName = selectedDistrict || 'Khordha';
+        if (!blockName) blockName = locationName || `PIN ${query}`;
+      } else {
+        // 2. Geocode Place / GP / Village Name via OpenStreetMap Nominatim
+        const geoQueries = [
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Odisha+India&format=json&limit=1`,
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+India&format=json&limit=1`
+        ];
+
+        for (const queryUrl of geoQueries) {
+          try {
+            const nomRes = await fetch(queryUrl);
+            const nomData = await nomRes.json();
+            if (nomData && nomData.length) {
+              lat = parseFloat(nomData[0].lat);
+              lon = parseFloat(nomData[0].lon);
+              const disp = nomData[0].display_name || '';
+              const parts = disp.split(',').map(s => s.trim());
+              for (const pt of parts) {
+                const matchedD = normalizeDistrictName(pt);
+                if (matchedD && ODISHA_DISTRICT_COORDS[matchedD]) {
+                  districtName = matchedD;
+                  break;
+                }
+              }
+              break;
+            }
+          } catch (e) {
+            console.warn('Place Nominatim error:', e);
+          }
+        }
+
+        if (!districtName) districtName = selectedDistrict || 'Khordha';
+        blockName = selectedBlock || 'Bhubaneswar';
       }
 
-      // 3. Fallback to district lookup table
+      // Fallback to district lookup if geocoding yields no coords
       if (!lat || !lon) {
         const lookupKey = districtName || 'Khordha';
         const dCoords = ODISHA_DISTRICT_COORDS[lookupKey] || ODISHA_DISTRICT_COORDS['Khordha'];
@@ -343,20 +383,17 @@ export const RiskMapPage = () => {
         lon = dCoords.lon;
       }
 
-      if (!districtName) districtName = 'Odisha';
-      if (!blockName) blockName = locationName || `PIN ${pincode}`;
+      const fullDisplayName = isPincode ? `${locationName || blockName} (${query})` : locationName;
 
-      const fullDisplayName = `${locationName || blockName} (${pincode})`;
-
-      // 4. Update map center & fetch weather
+      // Update map center & fetch weather
       setCoords({ lat, lon, name: fullDisplayName, country: `${districtName}, Odisha` });
       await fetchWeather(lat, lon);
 
-      // 5. Globally update AppContext & Navbar location
+      // Globally update AppContext & Navbar location
       changeLocation(districtName, blockName, null, locationName);
-      localStorage.setItem('moes_user_pincode', pincode);
+      if (isPincode) localStorage.setItem('moes_user_pincode', query);
 
-      // 6. Generate dynamic local markers for searched pincode
+      // Generate dynamic local GP / surrounding markers
       let newMarkers = [];
       if (postOfficesList.length > 1) {
         newMarkers = postOfficesList.slice(0, 8).map((po, idx) => {
@@ -375,10 +412,10 @@ export const RiskMapPage = () => {
         newMarkers = angles.map((deg, i) => {
           const rad = (deg * Math.PI) / 180;
           return {
-            name: i === 0 ? `${blockName} North` : i === 1 ? `${blockName} East` : `${blockName} GP-${i + 1}`,
+            name: i === 0 ? `${locationName} North` : i === 1 ? `${locationName} East` : `${locationName} GP-${i + 1}`,
             district: districtName,
-            lat: lat + Math.sin(rad) * 0.04,
-            lon: lon + Math.cos(rad) * 0.05
+            lat: lat + Math.sin(rad) * 0.03,
+            lon: lon + Math.cos(rad) * 0.04
           };
         });
       }
@@ -404,16 +441,15 @@ export const RiskMapPage = () => {
       {/* Top Floating Controls Bar */}
       <div className="absolute top-4 left-4 right-4 z-[500] flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         
-        {/* Left: Search Box (Matching Reference Image) */}
+        {/* Left: Search Box (Accepts Place, GP, Village or 6-digit Pincode) */}
         <form onSubmit={handleSearch} className="pointer-events-auto flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 px-3 py-2 rounded-2xl shadow-2xl">
           <MapPin className="h-4 w-4 text-cyan-400" />
           <input
             type="text"
             value={pincode}
-            onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="Enter Pincode (e.g. 754212)"
-            maxLength={6}
-            className="w-48 sm:w-60 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
+            onChange={(e) => setPincode(e.target.value)}
+            placeholder="Search Place, GP or PIN (e.g. Konark, 756026)..."
+            className="w-56 sm:w-72 bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none font-sans font-semibold"
           />
           <button
             type="submit"

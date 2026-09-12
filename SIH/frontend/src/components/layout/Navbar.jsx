@@ -69,8 +69,59 @@ export const Navbar = () => {
   const blockCount = blocks?.length || 0;
   const gpCount = activePanchayats?.length || 0;
 
+  const [navSearch, setNavSearch] = useState('');
+  const [navSearching, setNavSearching] = useState(false);
+
+  const handleNavSearch = async (e) => {
+    e?.preventDefault();
+    const query = navSearch.trim();
+    if (!query) return;
+
+    setNavSearching(true);
+    try {
+      let districtName = '';
+      let blockName = '';
+      let locationName = query;
+      const isPincode = /^\d{6}$/.test(query);
+
+      if (isPincode) {
+        try {
+          const pinRes = await fetch(`https://api.postalpincode.in/pincode/${query}`);
+          const pinData = await pinRes.json();
+          if (pinData[0]?.Status === 'Success' && pinData[0]?.PostOffice?.length) {
+            const mainPo = pinData[0].PostOffice[0];
+            districtName = mainPo.District;
+            blockName = mainPo.Block || mainPo.Name;
+            locationName = mainPo.Name;
+          }
+        } catch (e) {}
+      } else {
+        try {
+          const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Odisha+India&format=json&limit=1`);
+          const nomData = await nomRes.json();
+          if (nomData && nomData.length) {
+            const disp = nomData[0].display_name || '';
+            const parts = disp.split(',').map(s => s.trim());
+            for (const pt of parts) {
+              if (districts?.includes(pt)) {
+                districtName = pt;
+                break;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      changeLocation(districtName || selectedDistrict, blockName || selectedBlock, null, locationName);
+      setNavSearch('');
+    } catch (err) {
+      console.warn("Nav search error", err);
+    }
+    setNavSearching(false);
+  };
+
   const renderLocationSelects = (isMobile = false) => (
-    <div className={`items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner ${isMobile ? 'flex' : 'hidden lg:flex'}`}>
+    <div className={`items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner ${isMobile ? 'flex flex-wrap' : 'hidden lg:flex'}`}>
       <div className="flex items-center gap-1 text-slate-400">
         <MapPin className="h-3.5 w-3.5 text-sky-400" />
         <span className="font-semibold text-slate-300">{selectedState}</span>
@@ -125,6 +176,22 @@ export const Navbar = () => {
           </option>
         ))}
       </select>
+
+      {/* Place / GP / Pincode Universal Search Input */}
+      <form onSubmit={handleNavSearch} className="flex items-center gap-1 bg-slate-800/90 border border-slate-700 rounded-lg px-2 py-1">
+        <Search className="h-3 w-3 text-cyan-400 shrink-0" />
+        <input
+          type="text"
+          value={navSearch}
+          onChange={(e) => setNavSearch(e.target.value)}
+          placeholder="Search Place / GP / PIN..."
+          className="w-28 sm:w-36 bg-transparent text-[11px] text-white placeholder-slate-400 focus:outline-none font-medium"
+        />
+        <button type="submit" disabled={navSearching} className="text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-1.5 py-0.5 rounded cursor-pointer">
+          {navSearching ? '...' : 'Go'}
+        </button>
+      </form>
+
       {loadingForecast && <span className="text-[10px] text-cyan-400 animate-pulse ml-1">● live</span>}
     </div>
   );
