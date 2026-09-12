@@ -17,6 +17,7 @@ import { HistoricalPage } from './pages/HistoricalPage';
 import { ExplainabilityPage } from './pages/ExplainabilityPage';
 import { SystemStatusPage } from './pages/SystemStatusPage';
 import { AuthPage } from './pages/AuthPage';
+import { WeatherBroadcastBanner } from './components/common/WeatherBroadcastBanner';
 
 function AppContent() {
   const { activeTab } = useApp();
@@ -55,6 +56,7 @@ function AppContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 font-sans">
+      <WeatherBroadcastBanner />
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden">

@@ -2,7 +2,7 @@
  * Unified Controllers for Monsoon Intelligence API
  */
 
-import { locations, getDistricts, getBlocksByDistrict, getLocationById, findLocation } from "../data/locations.js";
+import { locations, getDistricts, getBlocksByDistrict, getPanchayatsByBlock, getAllPanchayatsByDistrict, getLocationById, findLocation } from "../data/locations.js";
 import { crops, generateCropAdvisory } from "../data/crops.js";
 import climateSignals from "../data/climateSignals.js";
 import historicalData from "../data/historical.js";
@@ -24,19 +24,28 @@ const getDistrictsList = (req, res) => {
 const getBlocksForDistrict = (req, res) => {
   const { district } = req.params;
   const blocks = getBlocksByDistrict(district);
-  res.json({ status: "success", district, blocks });
+  res.json({ status: "success", district, count: blocks.length, blocks });
 };
 
 const getPanchayatsForBlock = (req, res) => {
   const { block } = req.params;
-  const loc = locations.find(l => l.block.toLowerCase() === block.toLowerCase()) || locations[0];
-  res.json({ status: "success", district: loc.district, block: loc.block, panchayats: loc.panchayats });
+  const { district } = req.query;
+  const norm = (s) => (s || "").toString().trim().toLowerCase();
+  let loc = null;
+  if (district) {
+    loc = locations.find(l => norm(l.block) === norm(block) && norm(l.district) === norm(district));
+  }
+  if (!loc) {
+    loc = locations.find(l => norm(l.block) === norm(block)) || locations[0];
+  }
+  res.json({ status: "success", district: loc.district, block: loc.block, locationId: loc.id, count: (loc.panchayats || []).length, panchayats: loc.panchayats });
 };
 
 // 2. Forecast
 const getForecastForLocation = (req, res) => {
   const { locationId } = req.params;
   const horizon = parseInt(req.query.horizon, 10) || 7;
+  const selectedPanchayat = req.query.panchayat || req.query.gp || null;
   const loc = getLocationById(locationId);
 
   const m = loc.metrics;
@@ -101,6 +110,7 @@ const getForecastForLocation = (req, res) => {
       district: loc.district,
       block: loc.block,
       panchayats: loc.panchayats,
+      selectedPanchayat: selectedPanchayat || loc.panchayats?.[0] || null,
       lat: loc.coordinates.lat,
       lon: loc.coordinates.lon,
       elevation_m: loc.elevation_m,
@@ -108,6 +118,7 @@ const getForecastForLocation = (req, res) => {
       soil_type: loc.soil_type
     },
     forecast_horizon_selected: horizon,
+    selectedPanchayat: selectedPanchayat || loc.panchayats?.[0] || null,
     metrics: {
       onset_probability: m.onset_probability,
       break_probability: m.break_probability,

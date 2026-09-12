@@ -158,23 +158,28 @@ const LOCAL_ODISHA_DB = {
     { id: "od-bhadrak-dhamnagar", district: "Bhadrak", block: "Dhamnagar", panchayats: ["Dhamnagar", "Dobal", "Jahangir", "Asurali", "Kothar", "Khaparapada", "Chudamani"] }
   ],
   'Cuttack': [
-    { id: "od-cuttack-sadar", district: "Cuttack", block: "Cuttack Sadar", panchayats: ["Jobra", "Choudwar", "Bidyadharpur", "42 Mouza", "Kandarpur", "Bentakar", "Gopalpur", "Telengapada"] },
-    { id: "od-cuttack-barang", district: "Cuttack", block: "Barang", panchayats: ["Barang", "Nandankanan", "Trisulia", "Belgachhia", "Ramdaspur", "Harianta"] },
-    { id: "od-cuttack-banki", district: "Cuttack", block: "Banki", panchayats: ["Banki", "Charchika", "Kalapathar", "Subarnapur", "Pathapur", "Nuagan", "Rathipur"] }
+    { id: "od-cuttack-sadar", district: "Cuttack", block: "Cuttack Sadar", panchayats: ["Telengapentha", "Kalyani Nagar", "Bandalo", "Bidyadharpur"] },
+    { id: "od-cuttack-athagarh", district: "Cuttack", block: "Athagarh", panchayats: ["Radhakishorepur", "Khuntuni", "Dorada", "Kandarapur"] },
+    { id: "od-cuttack-salipur", district: "Cuttack", block: "Salipur", panchayats: ["Bhatapada", "Choudwar", "Kishorenagar", "Sisua"] }
   ],
   'Khordha': [
-    { id: "od-khordha-bhubaneswar", district: "Khordha", block: "Bhubaneswar", panchayats: ["Patia", "Mencheswar", "Baramunda", "Tamando", "Dhauli", "Chandaka", "Khandagiri", "Sundarpada", "Pahala", "Raghunathpur", "Bhuasuni", "Kalinga Nagar"] },
-    { id: "od-khordha-jatani", district: "Khordha", block: "Jatani", panchayats: ["Kantabad", "Khurdha Road", "Kudiary", "Padanpur", "Jatani Town", "Bachharat", "Harirajpur"] },
-    { id: "od-khordha-sadar", district: "Khordha", block: "Khordha Sadar", panchayats: ["Kaipadar", "Gurujanga", "Orkal", "Tangiapada", "Malipada", "Bajpur", "Jankia"] }
+    { id: "od-khordha-bhubaneswar", district: "Khordha", block: "Bhubaneswar", panchayats: ["Patia", "Mencheswar", "Baramunda", "Tamando", "Dhauli"] },
+    { id: "od-khordha-jatani", district: "Khordha", block: "Jatani", panchayats: ["Kantabad", "Khurdha Road", "Kudiary", "Padanpur"] }
   ],
   'Puri': [
-    { id: "od-puri-sadar", district: "Puri", block: "Puri Sadar", panchayats: ["Baliguali", "Chhaitana", "Gopinathpur", "Samanga", "Chandanpur", "Biraharekrushnapur", "Satasankha", "Malatipatpur"] },
-    { id: "od-puri-nimapada", district: "Puri", block: "Nimapada", panchayats: ["Alipingal", "Denuan", "Gopabandhu", "Terundia", "Nimapada Town", "Antuar", "Nagar", "Bhagabanpur"] }
+    { id: "od-puri-sadar", district: "Puri", block: "Puri Sadar", panchayats: ["Baliguali", "Chhaitana", "Gopinathpur", "Samanga"] },
+    { id: "od-puri-nimapada", district: "Puri", block: "Nimapada", panchayats: ["Alipingal", "Denuan", "Gopabandhu", "Terundia"] }
   ],
   'Kendrapara': [
     { id: "od-kendrapara-rajkanika", district: "Kendrapara", block: "Rajkanika", panchayats: ["Dangarpatna", "Katana", "Barunadiha", "Meghapur", "Baghabuda", "Tarasahi", "Jaynagar", "Nanpur", "Jagulaipada"] },
-    { id: "od-kendrapara-aul", district: "Kendrapara", block: "Aul", panchayats: ["Demal", "Govindpur", "Batipada", "Keredagarh", "Sanmangala", "Sansar"] },
-    { id: "od-kendrapara-mahakalapada", district: "Kendrapara", block: "Mahakalapada", panchayats: ["Ramnagar", "Jambu", "Batighar", "Kharinasi", "Barada", "Marshaghai"] }
+    { id: "od-kendrapara-aul", district: "Kendrapara", block: "Aul", panchayats: ["Demal", "Govindpur", "Batipada", "Keredagarh", "Sanmangala"] },
+    { id: "od-kendrapara-mahakalapada", district: "Kendrapara", block: "Mahakalapada", panchayats: ["Ramnagar", "Jambu", "Batighar", "Kharinasi", "Barada"] },
+    { id: "od-kendrapara-pattamundai", district: "Kendrapara", block: "Pattamundai", panchayats: ["Andhara", "Bachharai", "Alapua", "Dosia", "Srirampur"] },
+    { id: "od-kendrapara-marshaghai", district: "Kendrapara", block: "Marshaghai", panchayats: ["Berhampur", "Karatutha", "Dumuka", "Manikunda"] }
+  ],
+  'Jagatsinghpur': [
+    { id: "od-jagatsinghpur-sadar", district: "Jagatsinghpur", block: "Jagatsinghpur Sadar", panchayats: ["Kaduapada", "Chatra", "Puran", "Alipingal"] },
+    { id: "od-jagatsinghpur-paradip", district: "Jagatsinghpur", block: "Paradip (Kujang)", panchayats: ["Bhutamundai", "Nuagarh", "Sandhakuda", "Bijaychandrapur"] }
   ],
   'Ganjam': [
     { id: "od-ganjam-berhampur", district: "Ganjam", block: "Berhampur", panchayats: ["Ankushpur", "Lathi", "Nimakhandi", "Golanthara", "Haladiapadar", "Kukudakhandi", "Brahmapur Town", "Bhakuri"] },
@@ -197,10 +202,15 @@ const normalizeDistrictKey = (district) => {
   if (d.includes('cuttack')) return 'Cuttack';
   if (d.includes('puri')) return 'Puri';
   if (d.includes('kendrapara') || d.includes('kendrapada')) return 'Kendrapara';
+  if (d.includes('jagatsinghpur') || d.includes('jagatsinghapur')) return 'Jagatsinghpur';
   if (d.includes('ganjam')) return 'Ganjam';
   if (d.includes('mayurbhanj')) return 'Mayurbhanj';
   if (d.includes('jajpur')) return 'Jajpur';
   if (d.includes('sambalpur')) return 'Sambalpur';
+  // direct match fallback
+  const keys = Object.keys(LOCAL_ODISHA_DB);
+  const direct = keys.find(k => k.toLowerCase() === d);
+  if (direct) return direct;
   return 'Khordha';
 };
 
@@ -226,11 +236,37 @@ export const fetchBlocks = async (district) => {
   return getLocalFallbackBlocks(district);
 };
 
-export const fetchForecast = async (locationId, horizon = 7) => {
+export const fetchPanchayats = async (block, district) => {
+  if (!block) return [];
   try {
-    const res = await fetch(`${API_BASE_URL}/forecast/${encodeURIComponent(locationId)}?horizon=${horizon}`);
+    const q = district ? `?district=${encodeURIComponent(district)}` : '';
+    const res = await fetch(`${API_BASE_URL}/panchayats/${encodeURIComponent(block)}${q}`);
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (data.panchayats && data.panchayats.length > 0) return data.panchayats;
+    }
+  } catch (err) {
+    console.warn("Using fallback panchayats", err);
+  }
+  // fallback from local DB
+  for (const dKey of Object.keys(LOCAL_ODISHA_DB)) {
+    const found = LOCAL_ODISHA_DB[dKey].find(b => b.block.toLowerCase() === block.toLowerCase());
+    if (found) return found.panchayats;
+  }
+  return [];
+};
+
+export const fetchForecast = async (locationId, horizon = 7, panchayat = null) => {
+  try {
+    const pParam = panchayat ? `&panchayat=${encodeURIComponent(panchayat)}` : '';
+    const res = await fetch(`${API_BASE_URL}/forecast/${encodeURIComponent(locationId)}?horizon=${horizon}${pParam}`);
+    if (res.ok) {
+      const data = await res.json();
+      // persist last real-time fetch for offline + fast reload
+      try {
+        localStorage.setItem('moes_last_forecast', JSON.stringify({ locationId, horizon, panchayat, data, at: Date.now() }));
+      } catch {}
+      return data;
     }
   } catch (err) {
     console.warn("Using fallback forecast", err);
@@ -382,4 +418,72 @@ export const fetchExplainability = async (payload) => {
     console.warn("Using fallback explainability", err);
   }
   return null;
+};
+
+// --- REAL-TIME WEATHER ALERTS (Nowcast → SMS → SSE Broadcast) ---
+
+/**
+ * On-demand ML nowcast check for a block (rain within 12 hours). Optionally
+ * sends a real SMS to a farmer mobile number so they get the alert instantly.
+ */
+export const checkWeatherAlert = async ({ district, block, phoneNumber } = {}) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/weather/alerts/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        district_name: district,
+        block_name: block,
+        phone_number: phoneNumber || undefined
+      })
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("checkWeatherAlert failed", err);
+  }
+  return null;
+};
+
+/**
+ * Trigger a broadcast for a specific block (admin). force bypasses the 2h dedup.
+ */
+export const triggerWeatherBroadcast = async ({ district, block, force = false } = {}) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/weather/alerts/trigger`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ district_name: district, block_name: block, force })
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("triggerWeatherBroadcast failed", err);
+  }
+  return null;
+};
+
+/**
+ * Register a live Server-Sent Events listener for real-time weather broadcasts.
+ * Returns a cleanup function. The listener receives heavy-rain/rain broadcast
+ * payloads pushed by the backend scheduler in real time.
+ */
+export const subscribeWeatherAlertsSSE = (onBroadcast, onError) => {
+  const source = new EventSource(`${API_BASE_URL}/weather/alerts/stream`);
+
+  source.addEventListener('weather-broadcast', (event) => {
+    try {
+      onBroadcast(JSON.parse(event.data));
+    } catch (err) {
+      console.warn('Bad SSE broadcast payload', err);
+    }
+  });
+
+  source.onerror = () => {
+    if (onError) onError(new Error('Weather alert SSE stream disconnected'));
+  };
+
+  return () => source.close();
 };

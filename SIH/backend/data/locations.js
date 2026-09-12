@@ -669,33 +669,64 @@ const locations = [
   }
 ];
 
-// Helper functions for locations
+ // Helper functions for locations — case-insensitive, trimmed, always return full lists
+const normalize = (s) => (s || "").toString().trim().toLowerCase();
+
 const getDistricts = () => {
   const uniqueDistricts = [...new Set(locations.map(l => l.district))];
   return uniqueDistricts.sort();
 };
 
 const getBlocksByDistrict = (districtName) => {
-  return locations.filter(l => l.district.toLowerCase() === districtName.toLowerCase());
+  const key = normalize(districtName);
+  if (!key) return [];
+  return locations.filter(l => normalize(l.district) === key);
+};
+
+const getPanchayatsByBlock = (blockName, districtName) => {
+  const bKey = normalize(blockName);
+  let loc = null;
+  if (districtName) {
+    loc = locations.find(l => normalize(l.block) === bKey && normalize(l.district) === normalize(districtName));
+  }
+  if (!loc) {
+    loc = locations.find(l => normalize(l.block) === bKey);
+  }
+  if (!loc) return [];
+  return loc.panchayats || [];
 };
 
 const getLocationById = (id) => {
-  return locations.find(l => l.id.toLowerCase() === id.toLowerCase()) || locations[0];
+  if (!id) return locations[0];
+  return locations.find(l => normalize(l.id) === normalize(id)) || locations[0];
 };
 
-const findLocation = (district, block) => {
+const findLocation = (district, block, panchayat) => {
   const match = locations.find(
-    l => l.district.toLowerCase() === (district || "").toLowerCase() &&
-         l.block.toLowerCase() === (block || "").toLowerCase()
+    l => normalize(l.district) === normalize(district) &&
+         normalize(l.block) === normalize(block)
   );
-  return match || locations[0]; // defaults to Rajkanika
+  const base = match || locations[0]; // defaults to Rajkanika
+  // Attach selected panchayat for real-time context without mutating DB
+  if (panchayat) {
+    return { ...base, selectedPanchayat: panchayat };
+  }
+  return base;
+};
+
+const getAllPanchayatsByDistrict = (districtName) => {
+  const blocks = getBlocksByDistrict(districtName);
+  const all = [];
+  blocks.forEach(b => (b.panchayats || []).forEach(p => all.push({ block: b.block, panchayat: p, locationId: b.id })));
+  return all;
 };
 
 export {
   locations,
   getDistricts,
   getBlocksByDistrict,
+  getPanchayatsByBlock,
+  getAllPanchayatsByDistrict,
   getLocationById,
   findLocation
 };
-

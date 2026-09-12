@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchDistricts, fetchBlocks, fetchForecast, fetchMeApi, logoutUserApi } from '../services/api';
+import { fetchDistricts, fetchBlocks, fetchPanchayats, fetchForecast, fetchMeApi, logoutUserApi, getLocalFallbackBlocks } from '../services/api';
 
 import locationSocket from '../utils/socketService';
 
@@ -34,14 +34,24 @@ export const AppProvider = ({ children }) => {
     return localStorage.getItem('moes_selected_block') || savedUser?.block || 'Bhubaneswar';
   });
   const [selectedPanchayat, setSelectedPanchayatState] = useState(() => {
-    return localStorage.getItem('moes_selected_panchayat') || 'Dangarpatna';
+    return localStorage.getItem('moes_selected_panchayat') || 'Patia';
   });
-  const [selectedLocationId, setSelectedLocationId] = useState('od-khordha-bhubaneswar');
+  const [selectedLocationId, setSelectedLocationId] = useState(() => {
+    return localStorage.getItem('moes_selected_locationId') || 'od-khordha-bhubaneswar';
+  });
+
+  // Persist full real-time location object for all pages
+  const persistLocation = (district, block, panchayat, locId) => {
+    try {
+      localStorage.setItem('moes_selected_location', JSON.stringify({ district, block, panchayat, locationId: locId, at: Date.now() }));
+    } catch {}
+  };
 
   const setSelectedPanchayat = (p) => {
     setSelectedPanchayatState(p);
     localStorage.setItem('moes_selected_panchayat', p);
-    locationSocket.changeLocation({ district: selectedDistrict, block: selectedBlock, panchayat: p });
+    persistLocation(selectedDistrict, selectedBlock, p, selectedLocationId);
+    locationSocket.changeLocation({ district: selectedDistrict, block: selectedBlock, panchayat: p, locationId: selectedLocationId });
   };
 
   // Forecast Horizon (7, 14, 21, 30 days)
@@ -136,63 +146,112 @@ export const AppProvider = ({ children }) => {
     loadDistricts();
   }, []);
 
-  // Load blocks whenever district changes
+  // Load blocks whenever district changes — always show ALL blocks for district
   useEffect(() => {
     const loadBlocks = async () => {
       if (!selectedDistrict) return;
       const blist = await fetchBlocks(selectedDistrict);
-      setBlocks(blist);
+      setBlocks(blist || []);
       if (blist && blist.length > 0) {
-        const belongs = blist.some(b => b.block.toLowerCase() === selectedBlock?.toLowerCase());
-        if (!belongs) {
+        const current = blist.find(b => b.block.toLowerCase() === selectedBlock?.toLowerCase());
+        if (!current) {
           const firstB = blist[0];
           setSelectedBlock(firstB.block);
           localStorage.setItem('moes_selected_block', firstB.block);
-          if (firstB.panchayats?.[0]) {
-            setSelectedPanchayatState(firstB.panchayats[0]);
-            localStorage.setItem('moes_selected_panchayat', firstB.panchayats[0]);
+          const firstGP = firstB.panchayats?.[0] || '';
+          if (firstGP) {
+            setSelectedPanchayatState(firstGP);
+            localStorage.setItem('moes_selected_panchayat', firstGP);
           }
-          if (firstB.id) setSelectedLocationId(firstB.id);
+          if (firstB.id) {
+            setSelectedLocationId(firstB.id);
+            localStorage.setItem('moes_selected_locationId', firstB.id);
+          }
+          persistLocation(selectedDistrict, firstB.block, firstGP, firstB.id);
+          locationSocket.changeLocation({ district: selectedDistrict, block: firstB.block, panchayat: firstGP, locationId: firstB.id });
+        } else {
+          // district same but ensure locationId + panchayat are valid for current block
+          if (current.id && current.id !== selectedLocationId) {
+            setSelectedLocationId(current.id);
+            localStorage.setItem('moes_selected_locationId', current.id);
+          }
+          const gps = current.panchayats || [];
+          if (gps.length > 0 && !gps.includes(selectedPanchayat)) {
+            setSelectedPanchayatState(gps[0]);
+            localStorage.setItem('moes_selected_panchayat', gps[0]);
+            persistLocation(selectedDistrict, current.block, gps[0], current.id);
+          }
         }
       }
     };
     loadBlocks();
   }, [selectedDistrict]);
 
-  // Load forecast whenever location or horizon changes
+  // Sync locationId whenever block changes (same district)
+  useEffect(() => {
+    if (!blocks || blocks.length === 0 || !selectedBlock) return;
+    const found = blocks.find(b => b.block.toLowerCase() === selectedBlock.toLowerCase());
+    if (found) {
+      if (found.id && found.id !== selectedLocationId) {
+        setSelectedLocationId(found.id);
+        localStorage.setItem('moes_selected_locationId', found.id);
+      }
+      const gps = found.panchayats || [];
+      if (gps.length > 0 && selectedPanchayat && !gps.includes(selectedPanchayat)) {
+        setSelectedPanchayatState(gps[0]);
+        localStorage.setItem('moes_selected_panchayat', gps[0]);
+      }
+      persistLocation(selectedDistrict, found.block, gps.includes(selectedPanchayat) ? selectedPanchayat : gps[0], found.id);
+    }
+  }, [selectedBlock, blocks]);
+
+  // Load forecast whenever location / GP / horizon changes — real-time fetch + store
   useEffect(() => {
     const loadForecast = async () => {
+      if (!selectedLocationId) return;
       setLoadingForecast(true);
-      const data = await fetchForecast(selectedLocationId, forecastHorizon);
+      const data = await fetchForecast(selectedLocationId, forecastHorizon, selectedPanchayat);
       if (data) {
         setForecastData(data);
       }
       setLoadingForecast(false);
     };
     loadForecast();
-  }, [selectedLocationId, forecastHorizon]);
+  }, [selectedLocationId, selectedPanchayat, forecastHorizon]);
 
-  // Handler to select a block cleanly
+  // Handler to select location cleanly — resolves id from blocks, stores everything
   const changeLocation = (district, block, locId, panchayat) => {
     const d = district || selectedDistrict;
-    const b = block || selectedBlock;
-    const p = panchayat || selectedPanchayat;
+    let b = block || selectedBlock;
+    let id = locId || selectedLocationId;
+    let p = panchayat || selectedPanchayat;
 
-    if (district) {
-      setSelectedDistrict(district);
-      localStorage.setItem('moes_selected_district', district);
-    }
-    if (block) {
-      setSelectedBlock(block);
-      localStorage.setItem('moes_selected_block', block);
-    }
-    if (locId) setSelectedLocationId(locId);
-    if (panchayat) {
-      setSelectedPanchayatState(panchayat);
-      localStorage.setItem('moes_selected_panchayat', panchayat);
+    // resolve id + gp from known blocks if not supplied
+    const pool = blocks && blocks.length > 0 ? blocks : getLocalFallbackBlocks(d);
+    const match = pool.find(x => x.block.toLowerCase() === (b || '').toLowerCase());
+    if (match) {
+      b = match.block;
+      if (!locId) id = match.id;
+      const gps = match.panchayats || [];
+      if (!panchayat || !gps.includes(panchayat)) {
+        p = gps[0] || p;
+      }
     }
 
-    locationSocket.changeLocation({ district: d, block: b, panchayat: p });
+    setSelectedDistrict(d);
+    localStorage.setItem('moes_selected_district', d);
+    setSelectedBlock(b);
+    localStorage.setItem('moes_selected_block', b);
+    if (id) {
+      setSelectedLocationId(id);
+      localStorage.setItem('moes_selected_locationId', id);
+    }
+    if (p) {
+      setSelectedPanchayatState(p);
+      localStorage.setItem('moes_selected_panchayat', p);
+    }
+    persistLocation(d, b, p, id);
+    locationSocket.changeLocation({ district: d, block: b, panchayat: p, locationId: id });
   };
 
   const toggleTheme = () => {

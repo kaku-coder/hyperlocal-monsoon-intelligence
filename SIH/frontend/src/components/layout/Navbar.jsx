@@ -25,51 +25,116 @@ export const Navbar = () => {
     selectedState,
     districts,
     selectedDistrict,
-    setSelectedDistrict,
     blocks,
     selectedBlock,
-    panchayatsList = ['Dangarpatna', 'Katana', 'Meghapur'],
     selectedPanchayat,
     setSelectedPanchayat,
-    changeLocation
+    changeLocation,
+    loadingForecast
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleDistrictChange = async (e) => {
+  const handleDistrictChange = (e) => {
     const newDistrict = e.target.value;
-    setSelectedDistrict(newDistrict);
-    localStorage.setItem('moes_selected_district', newDistrict);
-    const newBlocks = await fetchBlocks(newDistrict);
-    if (newBlocks && newBlocks.length > 0) {
-      changeLocation(newDistrict, newBlocks[0].block, newBlocks[0].id, newBlocks[0].panchayats?.[0]);
-    }
+    // changeLocation resolves first block + first GP + locationId automatically
+    // and triggers real-time forecast fetch + localStorage persist + socket broadcast
+    changeLocation(newDistrict, null, null, null);
   };
 
   const handleBlockChange = (e) => {
     const bname = e.target.value;
-    const found = blocks.find(b => b.block === bname);
+    const found = (blocks || []).find(b => b.block === bname);
     if (found) {
-      changeLocation(found.district, found.block, found.id, found.panchayats?.[0]);
+      changeLocation(found.district || selectedDistrict, found.block, found.id, found.panchayats?.[0]);
+    } else {
+      changeLocation(selectedDistrict, bname, null, null);
     }
   };
 
   const handlePanchayatChange = (e) => {
-    setSelectedPanchayat(e.target.value);
+    const gp = e.target.value;
+    // GP change also re-fetches real-time forecast (via AppContext effect) + stores + broadcasts
+    setSelectedPanchayat(gp);
   };
 
-  const currentBlockObj = blocks.find(b => b.block === selectedBlock);
-  const basePanchayats = currentBlockObj?.panchayats || ['Sugo', 'Kotasahi', 'Rayaramchandrapur', 'Paschimbad', 'Asti', 'Baliapal', 'Kuruda', 'Haladipada', 'Dangarpatna'];
-  const activePanchayats = selectedPanchayat && !basePanchayats.includes(selectedPanchayat)
+  const currentBlockObj = (blocks || []).find(b => b.block === selectedBlock);
+  const basePanchayats = currentBlockObj?.panchayats || [];
+  // Always show ALL GPs of selected block; keep selected on top if stale
+  const activePanchayats = selectedPanchayat && basePanchayats.length > 0 && !basePanchayats.includes(selectedPanchayat)
     ? [selectedPanchayat, ...basePanchayats]
     : basePanchayats;
 
+  const districtCount = districts?.length || 0;
+  const blockCount = blocks?.length || 0;
+  const gpCount = activePanchayats?.length || 0;
+
+  const renderLocationSelects = (isMobile = false) => (
+    <div className={`items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner ${isMobile ? 'flex' : 'hidden lg:flex'}`}>
+      <div className="flex items-center gap-1 text-slate-400">
+        <MapPin className="h-3.5 w-3.5 text-sky-400" />
+        <span className="font-semibold text-slate-300">{selectedState}</span>
+        <ChevronRight className="h-3 w-3 text-slate-600" />
+      </div>
+
+      {/* District Dropdown — shows ALL districts */}
+      <select
+        value={selectedDistrict || ''}
+        onChange={handleDistrictChange}
+        title={`${districtCount} districts available`}
+        className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer max-w-[140px]"
+      >
+        {districtCount === 0 && <option value="">Loading…</option>}
+        {(districts || []).map(d => (
+          <option key={d} value={d} className="bg-slate-900 text-white">
+            {d}
+          </option>
+        ))}
+      </select>
+
+      <ChevronRight className="h-3 w-3 text-slate-600" />
+
+      {/* Block Dropdown — shows ALL blocks of selected district */}
+      <select
+        value={selectedBlock || ''}
+        onChange={handleBlockChange}
+        title={`${blockCount} blocks in ${selectedDistrict}`}
+        className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer max-w-[170px]"
+      >
+        {blockCount === 0 && <option value="">No blocks</option>}
+        {(blocks || []).map(b => (
+          <option key={b.id || b.block} value={b.block} className="bg-slate-900 text-white">
+            {b.block} ({b.panchayats?.length || 0} GPs)
+          </option>
+        ))}
+      </select>
+
+      <ChevronRight className="h-3 w-3 text-slate-600" />
+
+      {/* Panchayat / GP Dropdown — shows ALL GPs of selected block */}
+      <select
+        value={selectedPanchayat || ''}
+        onChange={handlePanchayatChange}
+        title={`${gpCount} GPs in ${selectedBlock}`}
+        className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer max-w-[160px]"
+      >
+        {gpCount === 0 && <option value="">No GPs</option>}
+        {activePanchayats.map(p => (
+          <option key={p} value={p} className="bg-slate-900 text-white">
+            GP: {p}
+          </option>
+        ))}
+      </select>
+      {loadingForecast && <span className="text-[10px] text-cyan-400 animate-pulse ml-1">● live</span>}
+    </div>
+  );
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 gap-2">
         
         {/* Left: MoES / NCMRWF Brand Identity */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <div 
             onClick={() => setActiveTab('landing')}
             className="flex items-center gap-3 cursor-pointer group"
@@ -81,7 +146,7 @@ export const Navbar = () => {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </span>
             </div>
-            <div>
+            <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
                   MoES <span className="text-sky-400">•</span> NCMRWF
@@ -94,60 +159,11 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Center: Hyperlocal Location Cascader */}
-        <div className="hidden lg:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner">
-          <div className="flex items-center gap-1 text-slate-400">
-            <MapPin className="h-3.5 w-3.5 text-sky-400" />
-            <span className="font-semibold text-slate-300">{selectedState}</span>
-            <ChevronRight className="h-3 w-3 text-slate-600" />
-          </div>
-
-          {/* District Dropdown */}
-          <select
-            value={selectedDistrict}
-            onChange={handleDistrictChange}
-            className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer"
-          >
-            {districts.map(d => (
-              <option key={d} value={d} className="bg-slate-900 text-white">
-                {d}
-              </option>
-            ))}
-          </select>
-
-          <ChevronRight className="h-3 w-3 text-slate-600" />
-
-          {/* Block Dropdown */}
-          <select
-            value={selectedBlock}
-            onChange={handleBlockChange}
-            className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
-          >
-            {blocks.map(b => (
-              <option key={b.id} value={b.block} className="bg-slate-900 text-white">
-                {b.block}
-              </option>
-            ))}
-          </select>
-
-          <ChevronRight className="h-3 w-3 text-slate-600" />
-
-          {/* Panchayat Dropdown */}
-          <select
-            value={selectedPanchayat}
-            onChange={handlePanchayatChange}
-            className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
-          >
-            {activePanchayats.map(p => (
-              <option key={p} value={p} className="bg-slate-900 text-white">
-                GP: {p}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Center: Hyperlocal Location Cascader (desktop) */}
+        {renderLocationSelects(false)}
 
         {/* Right: Mode Switcher, Language & Auth Button */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
           {/* Toggle between Officer Command Center and Farmer Mode */}
           {activeTab === 'farmer-mode' ? (
@@ -230,6 +246,9 @@ export const Navbar = () => {
                     <div className="text-[10px] text-amber-300 font-semibold mt-1">
                       📍 {user.block || selectedBlock} ({user.pincode || '754212'})
                     </div>
+                    <div className="text-[10px] text-emerald-300 font-medium">
+                      {selectedDistrict} → {selectedBlock} → GP: {selectedPanchayat}
+                    </div>
                   </div>
 
                   <button
@@ -257,6 +276,11 @@ export const Navbar = () => {
 
         </div>
 
+      </div>
+
+      {/* Mobile location bar — visible below header on small screens */}
+      <div className="lg:hidden px-3 pb-2 overflow-x-auto">
+        {renderLocationSelects(true)}
       </div>
 
     </header>

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { translations } from '../utils/localization';
 import { playTextToSpeech, stopTextToSpeech } from '../utils/tts';
+import { checkWeatherAlert } from '../services/api';
 import { 
   Sprout, 
   CloudRain, 
@@ -17,7 +18,10 @@ import {
   ChevronDown,
   Layers,
   Sparkles,
-  Info
+  Info,
+  Radio,
+  BellRing,
+  Loader2
 } from 'lucide-react';
 
 export const FarmerModePage = () => {
@@ -29,11 +33,15 @@ export const FarmerModePage = () => {
     selectedCrop,
     setSelectedCrop,
     forecastData,
-    setActiveTab
+    setActiveTab,
+    user
   } = useApp();
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
+  const [nowcastData, setNowcastData] = useState(null);
+  const [checkingWeather, setCheckingWeather] = useState(false);
+  const [smsSent, setSmsSent] = useState(false);
 
   const t = translations[farmerLanguage] || translations.en;
 
@@ -76,6 +84,20 @@ export const FarmerModePage = () => {
         setTtsError(true);
       }
     });
+  };
+
+  const handleCheckWeather = async () => {
+    setCheckingWeather(true);
+    setSmsSent(false);
+    const phoneNumber = user?.phoneNumber || localStorage.getItem('moes_phone') || '9508165261';
+    const result = await checkWeatherAlert({
+      district: selectedDistrict,
+      block: selectedBlock,
+      phoneNumber
+    });
+    setNowcastData(result);
+    setCheckingWeather(false);
+    if (result && result.sms_delivery) setSmsSent(true);
   };
 
   return (
@@ -158,6 +180,109 @@ export const FarmerModePage = () => {
             </div>
           </div>
 
+        </div>
+
+        {/* Real-Time Nowcast Card (Rain within 12 hours → real SMS to farmer) */}
+        <div className="rounded-2xl bg-slate-900 border border-slate-700 p-4 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radio className="h-4 w-4 text-cyan-400 animate-pulse" />
+              <span className="text-xs font-black uppercase tracking-wider text-cyan-300">
+                {t.rainNowcast || "Live Rain Nowcast"}
+              </span>
+            </div>
+            <span className="text-[9px] text-slate-500 font-bold bg-slate-800 px-2 py-1 rounded-full border border-slate-700">
+              Next 12 Hours
+            </span>
+          </div>
+
+          {checkingWeather ? (
+            <div className="flex items-center justify-center gap-2 py-4 text-slate-400 text-xs font-semibold">
+              <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+              <span>{t.checkingWeather || "Contacting real-time ML radar..."}</span>
+            </div>
+          ) : nowcastData ? (
+            <div className="space-y-2.5">
+              {nowcastData.severity !== 'NONE' ? (
+                <>
+                  <div className={`flex items-center gap-2.5 rounded-xl p-3 border ${
+                    nowcastData.severity === 'HEAVY_RAIN'
+                      ? 'bg-rose-950/60 border-rose-600/60'
+                      : 'bg-sky-950/60 border-sky-600/60'
+                  }`}>
+                    {nowcastData.severity === 'HEAVY_RAIN' ? (
+                      <CloudRain className="h-6 w-6 text-rose-300 flex-shrink-0" />
+                    ) : (
+                      <CloudRain className="h-6 w-6 text-sky-300 flex-shrink-0" />
+                    )}
+                    <div>
+                      <div className={`text-xs font-black ${nowcastData.severity === 'HEAVY_RAIN' ? 'text-rose-200' : 'text-sky-200'}`}>
+                        {nowcastData.severity === 'HEAVY_RAIN'
+                          ? (t.heavyRainAlert || "Heavy Rain Warning")
+                          : (t.rainSoonAlert || "Rain Expected Soon")}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-semibold">
+                        {nowcastData.expected_rainfall_12h_mm} mm rain · {nowcastData.alert_probability || 0}% probability · within 12 hours
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] leading-relaxed text-slate-300 font-medium">
+                    {nowcastData.message_en}
+                  </p>
+
+                  {smsSent && nowcastData.sms_delivery && (
+                    <div className="rounded-lg bg-emerald-950/50 border border-emerald-600/40 px-3 py-2 text-[10px] font-bold text-emerald-300 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>
+                        {t.smsSentMsg || "SMS sent"} via {nowcastData.sms_delivery.provider} to {nowcastData.sms_delivery.phone}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-2.5 rounded-xl bg-slate-950 border border-slate-800 p-3">
+                  <SunMedium className="h-6 w-6 text-amber-300 flex-shrink-0" />
+                  <div>
+                    <div className="text-xs font-black text-amber-200">
+                      {t.noRainSoon || "No Heavy Rain Expected"}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-semibold">
+                      {t.noRainDetail || "Clear weather for the next 12 hours in your area"}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="text-[9px] text-slate-500 font-semibold">
+                {t.nowcastSource || "Source:"} {nowcastData.source || "Real-Time ML Nowcast"} · {new Date(nowcastData.timestamp).toLocaleTimeString()}
+              </div>
+            </div>
+          ) : (
+            <div className="text-[10px] text-slate-400 font-medium leading-relaxed">
+              {t.nowcastHint || "Real-time AI weather check — detects rain within the next 12 hours and instantly sends a weather alert SMS to your mobile number."}
+            </div>
+          )}
+
+          <button
+            onClick={handleCheckWeather}
+            disabled={checkingWeather}
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md ${
+              checkingWeather
+                ? 'bg-slate-800 text-slate-500 cursor-wait'
+                : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-900/40'
+            }`}
+          >
+            {checkingWeather ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <BellRing className="h-4 w-4" />
+            )}
+            <span>
+              {checkingWeather
+                ? (t.checkingNow || "Checking...")
+                : (t.checkNowAlert || "Check My Weather & Send SMS Alert")}
+            </span>
+          </button>
         </div>
 
         {/* Big Actionable Advice Box */}

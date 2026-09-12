@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import routes from "./routes/index.js";
+import weatherAlertsRoutes from "./routes/weatherAlerts.js";
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.get("/health", (req, res) => {
 
 // API Routes mounting
 app.use("/api", routes);
+
+// Real-Time Weather Alert Streams (SSE) + on-demand nowcast checks
+app.use("/api/weather/alerts", weatherAlertsRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
