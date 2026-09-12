@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.schemas.prediction import PredictionRequest, PredictionResponse, ExplainabilityResponse
+from app.schemas.prediction import PredictionRequest, PredictionResponse, ExplainabilityResponse, NowcastRequest, NowcastResponse
 from app.services.predictor import predictor
 from app.services.explainer import explainer
+from app.services.nowcaster import nowcaster
 
 app = FastAPI(
     title="Hyperlocal Monsoon ML Prediction Service",
@@ -46,6 +47,18 @@ def get_explanation(req: PredictionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/nowcast", response_model=NowcastResponse)
+def get_nowcast(req: NowcastRequest):
+    """
+    Real-time 12-hour rainfall & heavy-rain nowcast.
+    Ingest live Open-Meteo hourly data -> condition ML model -> alert decision with
+    multilingual broadcast messages for farmer SMS dispatch.
+    """
+    try:
+        return nowcaster.nowcast(req)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Nowcast failed: {e}")
+
 @app.get("/climate-indices/current")
 def get_current_climate_indices():
     return {
@@ -72,4 +85,4 @@ def get_current_climate_indices():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8008, reload=True)

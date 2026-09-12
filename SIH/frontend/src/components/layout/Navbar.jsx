@@ -59,7 +59,10 @@ export const Navbar = () => {
   };
 
   const currentBlockObj = blocks.find(b => b.block === selectedBlock);
-  const activePanchayats = currentBlockObj?.panchayats || panchayatsList;
+  const basePanchayats = currentBlockObj?.panchayats || ['Sugo', 'Kotasahi', 'Rayaramchandrapur', 'Paschimbad', 'Asti', 'Baliapal', 'Kuruda', 'Haladipada', 'Dangarpatna'];
+  const activePanchayats = selectedPanchayat && !basePanchayats.includes(selectedPanchayat)
+    ? [selectedPanchayat, ...basePanchayats]
+    : basePanchayats;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">

@@ -142,6 +142,19 @@ export const AppProvider = ({ children }) => {
       if (!selectedDistrict) return;
       const blist = await fetchBlocks(selectedDistrict);
       setBlocks(blist);
+      if (blist && blist.length > 0) {
+        const belongs = blist.some(b => b.block.toLowerCase() === selectedBlock?.toLowerCase());
+        if (!belongs) {
+          const firstB = blist[0];
+          setSelectedBlock(firstB.block);
+          localStorage.setItem('moes_selected_block', firstB.block);
+          if (firstB.panchayats?.[0]) {
+            setSelectedPanchayatState(firstB.panchayats[0]);
+            localStorage.setItem('moes_selected_panchayat', firstB.panchayats[0]);
+          }
+          if (firstB.id) setSelectedLocationId(firstB.id);
+        }
+      }
     };
     loadBlocks();
   }, [selectedDistrict]);

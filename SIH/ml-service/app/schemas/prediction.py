@@ -51,3 +51,44 @@ class ExplainabilityResponse(BaseModel):
     dominant_driver: str
     explanation_summary: str
     is_prototype: bool = True
+
+
+class NowcastRequest(BaseModel):
+    """Real-time 12-hour rainfall nowcast request (lat/lon based, no static data required)."""
+    latitude: float = Field(..., example=20.2961)
+    longitude: float = Field(..., example=85.8245)
+    district_name: Optional[str] = Field(None, example="Kendrapara")
+    block_name: Optional[str] = Field(None, example="Rajkanika")
+
+
+class NowcastHour(BaseModel):
+    time: str
+    precipitation_mm: float
+    precipitation_probability: float
+    weather_code: int
+    is_rain_hour: bool
+
+
+class NowcastAlert(BaseModel):
+    rain_within_12h: bool = Field(..., description="True if rain is forecast in the next 12 hours")
+    expected_rainfall_12h_mm: float = Field(..., description="Accumulated precipitation over next 12h")
+    total_rainfall_24h_mm: float = Field(..., description="Accumulated precipitation over next 24h")
+    max_hourly_precip_mm: float = Field(..., description="Heaviest single-hour precipitation in next 12h")
+    heavy_rain_in_12h: bool = Field(..., description="True if heavy/near heavy rain burst detected in next 12h")
+    heavy_rain_probability: float = Field(..., description="ML heavy-rain probability (0.0-1.0)")
+    risk_level: str = Field(..., description="Dominant risk category: LOW, MODERATE, HIGH, VERY HIGH")
+    alert_severity: str = Field(..., description="NONE, RAIN or HEAVY_RAIN")
+    earliest_rain_time: Optional[str] = Field(None, description="ISO time when rain is first expected")
+    message_en: str
+    message_hi: str
+    message_or: str
+
+
+class NowcastResponse(BaseModel):
+    status: str = "success"
+    location: Dict[str, Any]
+    nowcast: NowcastAlert
+    hourly: List[NowcastHour]
+    model_version: str
+    generated_at: str
+    is_prototype: bool = True

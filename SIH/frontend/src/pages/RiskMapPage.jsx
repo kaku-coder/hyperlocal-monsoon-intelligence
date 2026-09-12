@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { useApp } from '../context/AppContext';
@@ -10,7 +10,10 @@ import {
 function MapRecenter({ center }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.flyTo(center, 11, { animate: true, duration: 1.2 });
+    if (center && Array.isArray(center) && center[0] && center[1]) {
+      map.invalidateSize();
+      map.flyTo(center, 12, { animate: true, duration: 1.4 });
+    }
   }, [center, map]);
   return null;
 }
@@ -110,9 +113,23 @@ export const RiskMapPage = () => {
   const [mapStyle, setMapStyle] = useState('esri-satellite');
   const [showClouds, setShowClouds] = useState(true);
   const [radarTimestamp, setRadarTimestamp] = useState(null);
+  const [localMarkers, setLocalMarkers] = useState(NEARBY_BLOCKS);
+  const isPincodeSearchRef = useRef(false);
 
   const getTileUrl = (style) => {
     return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  };
+
+  const normalizeDistrictName = (distName) => {
+    if (!distName) return 'Khordha';
+    const lower = distName.toLowerCase();
+    if (lower.includes('baleswar') || lower.includes('balasore')) return 'Balasore';
+    if (lower.includes('khurda') || lower.includes('khordha')) return 'Khordha';
+    if (lower.includes('bolangir') || lower.includes('balangir')) return 'Bolangir';
+    if (lower.includes('subarnapur') || lower.includes('sonepur')) return 'Subarnapur';
+    if (lower.includes('keonjhar') || lower.includes('kendujhar')) return 'Keonjhar';
+    if (lower.includes('kandhamal') || lower.includes('phulbani')) return 'Kandhamal';
+    return distName;
   };
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
@@ -142,33 +159,41 @@ export const RiskMapPage = () => {
     }
   }, []);
 
-  // Batch fetch weather for all surrounding block markers across Odisha
-  useEffect(() => {
-    const fetchBlockWeathers = async () => {
-      try {
-        const lats = NEARBY_BLOCKS.map(b => b.lat).join(',');
-        const lons = NEARBY_BLOCKS.map(b => b.lon).join(',');
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=temperature_2m,weather_code,relative_humidity_2m,precipitation&timezone=auto`);
-        const data = await res.json();
-        const weatherMap = {};
+  // Fetch weather for a list of local markers
+  const fetchWeatherForMarkers = useCallback(async (markersList) => {
+    if (!markersList || !markersList.length) return;
+    try {
+      const lats = markersList.map(b => b.lat).join(',');
+      const lons = markersList.map(b => b.lon).join(',');
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=temperature_2m,weather_code,relative_humidity_2m,precipitation&timezone=auto`);
+      const data = await res.json();
+      const weatherMap = {};
 
-        if (Array.isArray(data)) {
-          data.forEach((item, idx) => {
-            weatherMap[NEARBY_BLOCKS[idx].name] = item.current;
-          });
-        } else if (data.current) {
-          weatherMap[NEARBY_BLOCKS[0].name] = data.current;
-        }
-        setBlockWeathers(weatherMap);
-      } catch (err) {
-        console.warn('Block weather fetch error:', err);
+      if (Array.isArray(data)) {
+        data.forEach((item, idx) => {
+          if (markersList[idx]) weatherMap[markersList[idx].name] = item.current;
+        });
+      } else if (data.current && markersList[0]) {
+        weatherMap[markersList[0].name] = data.current;
       }
-    };
-    fetchBlockWeathers();
+      setBlockWeathers(weatherMap);
+    } catch (err) {
+      console.warn('Marker weather fetch error:', err);
+    }
   }, []);
+
+  // Initial fetch for nearby blocks
+  useEffect(() => {
+    fetchWeatherForMarkers(NEARBY_BLOCKS);
+  }, [fetchWeatherForMarkers]);
 
   // Sync function that accurately geocodes District/Block/Panchayat without returning hardcoded Bhubaneswar
   const syncMapLocation = useCallback(async (targetDistrict, targetBlock, targetPanchayat) => {
+    if (isPincodeSearchRef.current) {
+      isPincodeSearchRef.current = false;
+      return;
+    }
+
     const d = targetDistrict || selectedDistrict || 'Khordha';
     const b = targetBlock || selectedBlock || 'Bhubaneswar';
     const p = targetPanchayat || selectedPanchayat || '';
@@ -206,17 +231,32 @@ export const RiskMapPage = () => {
         finalLon = districtLookup.lon;
       }
 
-      setCoords({ lat: finalLat, lon: finalLon, name: displayName, country: d });
+      setCoords({ lat: finalLat, lon: finalLon, name: displayName, country: `${d}, Odisha` });
       await fetchWeather(finalLat, finalLon);
+
+      // Generate surrounding markers around target location
+      const surroundAngles = [0, 60, 120, 180, 240, 300];
+      const generated = surroundAngles.map((deg, i) => {
+        const rad = (deg * Math.PI) / 180;
+        return {
+          name: i === 0 ? `${b} North` : i === 1 ? `${b} East` : i === 2 ? `${b} South` : `${b} GP-${i + 1}`,
+          district: d,
+          lat: finalLat + Math.sin(rad) * 0.04,
+          lon: finalLon + Math.cos(rad) * 0.05
+        };
+      });
+      setLocalMarkers(generated);
+      await fetchWeatherForMarkers(generated);
+
       setStatus(`📍 ${displayName}, ${d}`);
     } catch (err) {
       console.warn('Location sync error:', err);
       const fallback = ODISHA_DISTRICT_COORDS[d] || ODISHA_DISTRICT_COORDS['Khordha'];
-      setCoords({ lat: fallback.lat, lon: fallback.lon, name: displayName, country: d });
+      setCoords({ lat: fallback.lat, lon: fallback.lon, name: displayName, country: `${d}, Odisha` });
       await fetchWeather(fallback.lat, fallback.lon);
     }
     setLoading(false);
-  }, [selectedDistrict, selectedBlock, selectedPanchayat, fetchWeather]);
+  }, [selectedDistrict, selectedBlock, selectedPanchayat, fetchWeather, fetchWeatherForMarkers]);
 
   // Subscribe to real-time socket / event bus for IMMEDIATE map refresh when Navbar location changes
   useEffect(() => {
@@ -249,37 +289,106 @@ export const RiskMapPage = () => {
     }
     setLoading(true);
     setStatus(lang === 'hi' ? 'खोज रहे हैं...' : lang === 'or' ? 'ସନ୍ଧାନ କରୁଛି...' : 'Searching...');
-    try {
-      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${pincode}&count=1&language=en&format=json`);
-      const geoData = await geoRes.json();
+    isPincodeSearchRef.current = true;
 
-      if (geoData.results?.length) {
-        const r = geoData.results[0];
-        setCoords({ lat: r.latitude, lon: r.longitude, name: r.name || pincode, country: r.admin1 || 'India' });
-        await fetchWeather(r.latitude, r.longitude);
-        setStatus(`📍 ${r.name} (${r.admin1 || 'India'})`);
-      } else {
+    try {
+      let lat = null;
+      let lon = null;
+      let locationName = '';
+      let districtName = '';
+      let blockName = '';
+      let postOfficesList = [];
+
+      // 1. Fetch official India Post details from Postal Pincode API
+      try {
         const pinRes = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
         const pinData = await pinRes.json();
         if (pinData[0]?.Status === 'Success' && pinData[0]?.PostOffice?.length) {
-          const po = pinData[0].PostOffice[0];
-          const nominatim = await fetch(`https://nominatim.openstreetmap.org/search?q=${po.Name}+${po.District}+Odisha+India&format=json&limit=1`);
-          const nomData = await nominatim.json();
-          if (nomData.length) {
-            const lat = parseFloat(nomData[0].lat);
-            const lon = parseFloat(nomData[0].lon);
-            setCoords({ lat, lon, name: po.Name, country: po.District });
-            changeLocation(po.District, po.Block || po.Name);
-            await fetchWeather(lat, lon);
-            setStatus(`📍 ${po.Name}, ${po.District}`);
-          } else {
-            setStatus(lang === 'hi' ? 'स्थान नहीं मिला' : lang === 'or' ? 'ସ୍ଥାନ ମିଳିଲା ନାହିଁ' : 'Location not found');
+          postOfficesList = pinData[0].PostOffice;
+          const mainPo = postOfficesList[0];
+          districtName = normalizeDistrictName(mainPo.District);
+          blockName = mainPo.Block || mainPo.Name;
+          locationName = mainPo.Name;
+        }
+      } catch (err) {
+        console.warn('Postal pincode API error:', err);
+      }
+
+      // 2. Fetch coordinates from OpenStreetMap Nominatim
+      const geoQueries = [
+        `https://nominatim.openstreetmap.org/search?q=${pincode}+India&format=json&limit=1`,
+        locationName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null,
+        blockName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(blockName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null
+      ].filter(Boolean);
+
+      for (const queryUrl of geoQueries) {
+        try {
+          const nomRes = await fetch(queryUrl);
+          const nomData = await nomRes.json();
+          if (nomData && nomData.length) {
+            lat = parseFloat(nomData[0].lat);
+            lon = parseFloat(nomData[0].lon);
+            break;
           }
-        } else {
-          setStatus(lang === 'hi' ? 'पिनकोड नहीं मिला' : lang === 'or' ? 'ପିନକୋଡ୍ ମିଳିଲା ନାହିଁ' : 'Pincode not found');
+        } catch (e) {
+          console.warn('Nominatim query error:', e);
         }
       }
+
+      // 3. Fallback to district lookup table
+      if (!lat || !lon) {
+        const lookupKey = districtName || 'Khordha';
+        const dCoords = ODISHA_DISTRICT_COORDS[lookupKey] || ODISHA_DISTRICT_COORDS['Khordha'];
+        lat = dCoords.lat;
+        lon = dCoords.lon;
+      }
+
+      if (!districtName) districtName = 'Odisha';
+      if (!blockName) blockName = locationName || `PIN ${pincode}`;
+
+      const fullDisplayName = `${locationName || blockName} (${pincode})`;
+
+      // 4. Update map center & fetch weather
+      setCoords({ lat, lon, name: fullDisplayName, country: `${districtName}, Odisha` });
+      await fetchWeather(lat, lon);
+
+      // 5. Globally update AppContext & Navbar location
+      changeLocation(districtName, blockName, null, locationName);
+      localStorage.setItem('moes_user_pincode', pincode);
+
+      // 6. Generate dynamic local markers for searched pincode
+      let newMarkers = [];
+      if (postOfficesList.length > 1) {
+        newMarkers = postOfficesList.slice(0, 8).map((po, idx) => {
+          const count = Math.min(postOfficesList.length, 8);
+          const angle = (idx / count) * 2 * Math.PI;
+          const distOffset = 0.03 + (idx % 3) * 0.02;
+          return {
+            name: po.Name,
+            district: po.Block || districtName,
+            lat: lat + Math.sin(angle) * distOffset,
+            lon: lon + Math.cos(angle) * (distOffset * 1.1)
+          };
+        });
+      } else {
+        const angles = [0, 60, 120, 180, 240, 300];
+        newMarkers = angles.map((deg, i) => {
+          const rad = (deg * Math.PI) / 180;
+          return {
+            name: i === 0 ? `${blockName} North` : i === 1 ? `${blockName} East` : `${blockName} GP-${i + 1}`,
+            district: districtName,
+            lat: lat + Math.sin(rad) * 0.04,
+            lon: lon + Math.cos(rad) * 0.05
+          };
+        });
+      }
+
+      setLocalMarkers(newMarkers);
+      await fetchWeatherForMarkers(newMarkers);
+
+      setStatus(`📍 ${fullDisplayName}, ${districtName}`);
     } catch (err) {
+      console.error('Search error:', err);
       setStatus(lang === 'hi' ? 'खोज में त्रुटि' : lang === 'or' ? 'ସନ୍ଧାନ ତ୍ରୁଟି' : 'Search error');
     }
     setLoading(false);
@@ -374,7 +483,7 @@ export const RiskMapPage = () => {
         )}
 
         {/* Render Interactive Weather Pins for Surrounding Odisha Blocks */}
-        {NEARBY_BLOCKS.map((block) => {
+        {localMarkers.map((block) => {
           const bw = blockWeathers[block.name];
           const bwmo = bw ? getWMO(bw.weather_code, lang) : { emoji: '🌤️' };
           const tempDisplay = bw ? `${Math.round(bw.temperature_2m)}°` : '--';
