@@ -316,3 +316,5 @@ export const useApp = () => {
   if (!context) throw new Error('useApp must be used within an AppProvider');
   return context;
 };
+
+/** AppContext - Global State & Sync Engine for Odisha Monsoon Platform */
