@@ -269,3 +269,4 @@ export {
   determineSeverity,
   buildBroadcastPayload
 };
+/** Weather Alert Service - Real-time ML nowcasting & SMS dispatch engine */
