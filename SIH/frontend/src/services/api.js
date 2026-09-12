@@ -150,46 +150,67 @@ const LOCAL_ODISHA_DB = {
     { id: "od-balasore-baliapal", district: "Balasore", block: "Baliapal", panchayats: ["Baliapal", "Asti", "Badasimulia", "Badhapal", "Bishnupur", "Dalua", "Ghantiary", "Jamkunda", "Jharapimpal", "Panchurukhi", "Paschima Bad", "Rella"] },
     { id: "od-balasore-basta", district: "Balasore", block: "Basta", panchayats: ["Basta", "Darda", "Mukulisi", "Sadanandapur", "Mathani", "Baharda", "Nagra", "Brahmanagao"] },
     { id: "od-balasore-bhograi", district: "Balasore", block: "Bhograi", panchayats: ["Bhograi", "Chandanpur", "Kusha", "Talsari", "Batagram", "Dehurda", "Kamarda", "Sarasatia"] },
-    { id: "od-balasore-remuna", district: "Balasore", block: "Remuna", panchayats: ["Remuna", "Gopalpur", "Kalyani", "Patripada", "Nisamani", "Mandarpur", "Sujanpur", "Padmapur"] }
+    { id: "od-balasore-remuna", district: "Balasore", block: "Remuna", panchayats: ["Remuna", "Gopalpur", "Kalyani", "Patripada", "Nisamani", "Mandarpur", "Sujanpur", "Padmapur"] },
+    { id: "od-balasore-soro", district: "Balasore", block: "Soro", panchayats: ["Soro Town", "Anantapur", "Manjuri Road", "Mangalpur", "Sabira", "Oupada"] }
   ],
   'Bhadrak': [
     { id: "od-bhadrak-sadar", district: "Bhadrak", block: "Bhadrak Sadar", panchayats: ["Arnapal", "Kharida", "Randia", "Banta", "Gelpur", "Baudpur", "Asura", "Nalanga"] },
     { id: "od-bhadrak-chandbali", district: "Bhadrak", block: "Chandbali", panchayats: ["Motto", "Kandagaradi", "Aradi", "Bansada", "Dhamra", "Panchapada", "Karanjamal", "Orasahi"] },
-    { id: "od-bhadrak-dhamnagar", district: "Bhadrak", block: "Dhamnagar", panchayats: ["Dhamnagar", "Dobal", "Jahangir", "Asurali", "Kothar", "Khaparapada", "Chudamani"] }
+    { id: "od-bhadrak-dhamnagar", district: "Bhadrak", block: "Dhamnagar", panchayats: ["Dhamnagar", "Dobal", "Jahangir", "Asurali", "Kothar", "Khaparapada", "Chudamani"] },
+    { id: "od-bhadrak-basudevpur", district: "Bhadrak", block: "Basudevpur", panchayats: ["Basudevpur", "Eram", "Bideipur", "Chudamani", "Lunga", "Kumarpur"] }
   ],
   'Cuttack': [
-    { id: "od-cuttack-sadar", district: "Cuttack", block: "Cuttack Sadar", panchayats: ["Telengapentha", "Kalyani Nagar", "Bandalo", "Bidyadharpur"] },
-    { id: "od-cuttack-athagarh", district: "Cuttack", block: "Athagarh", panchayats: ["Radhakishorepur", "Khuntuni", "Dorada", "Kandarapur"] },
-    { id: "od-cuttack-salipur", district: "Cuttack", block: "Salipur", panchayats: ["Bhatapada", "Choudwar", "Kishorenagar", "Sisua"] }
+    { id: "od-cuttack-sadar", district: "Cuttack", block: "Cuttack Sadar", panchayats: ["Telengapentha", "Kalyani Nagar", "Bandalo", "Bidyadharpur", "Chauliaganj", "Jobra", "Madhupatna", "Gopalpur"] },
+    { id: "od-cuttack-athagarh", district: "Cuttack", block: "Athagarh", panchayats: ["Radhakishorepur", "Khuntuni", "Dorada", "Kandarapur", "Bentakar", "Gurudijhatia", "Athagarh Town"] },
+    { id: "od-cuttack-salipur", district: "Cuttack", block: "Salipur", panchayats: ["Bhatapada", "Choudwar", "Kishorenagar", "Sisua", "Salipur Town", "Tangi-Choudwar", "Bahugram"] },
+    { id: "od-cuttack-banki", district: "Cuttack", block: "Banki", panchayats: ["Banki", "Charchika", "Kalapathar", "Subarnapur", "Pathapur", "Nuagan", "Rathipur"] },
+    { id: "od-cuttack-badamba", district: "Cuttack", block: "Badamba", panchayats: ["Badamba", "Maniabandha", "Bhattarika", "Sankhameri", "Gopinathpur", "Khandapada Road"] },
+    { id: "od-cuttack-niali", district: "Cuttack", block: "Niali", panchayats: ["Niali", "Kasarda", "Jhabata", "Nuagaon", "Bilasuni", "Eranch"] }
   ],
   'Khordha': [
-    { id: "od-khordha-bhubaneswar", district: "Khordha", block: "Bhubaneswar", panchayats: ["Patia", "Mencheswar", "Baramunda", "Tamando", "Dhauli"] },
-    { id: "od-khordha-jatani", district: "Khordha", block: "Jatani", panchayats: ["Kantabad", "Khurdha Road", "Kudiary", "Padanpur"] }
+    { id: "od-khordha-bhubaneswar", district: "Khordha", block: "Bhubaneswar", panchayats: ["Patia", "Mancheswar", "Baramunda", "Tamando", "Dhauli", "Chandaka", "Khandagiri", "Sundarpada", "Pahala", "Raghunathpur", "Bhuasuni", "Kalinga Nagar", "Infocity"] },
+    { id: "od-khordha-jatani", district: "Khordha", block: "Jatani", panchayats: ["Kantabad", "Khurdha Road", "Kudiary", "Padanpur", "Jatani Town", "Bachharat", "Harirajpur", "Retang"] },
+    { id: "od-khordha-sadar", district: "Khordha", block: "Khordha Sadar", panchayats: ["Gurujanga", "Kaipadar", "Orkal", "Tangiapada", "Malipada", "Bajpur", "Jankia", "Nirakarpur", "Khordha Town"] },
+    { id: "od-khordha-balianta", district: "Khordha", block: "Balianta", panchayats: ["Baluakati", "Benupur", "Jayadev", "Banamalipur", "Satyabhamapur", "Purushottampur", "Prataprudrapur"] },
+    { id: "od-khordha-balipatna", district: "Khordha", block: "Balipatna", panchayats: ["Balipatna", "Bhapur", "Rajas", "Turintira", "Majhihara", "Pamana", "Bamanala"] },
+    { id: "od-khordha-tangi", district: "Khordha", block: "Tangi", panchayats: ["Tangi", "Kuhudi", "Olasingha", "Bhushandpur", "Chandeswar", "Saranakul", "Kapasagaria"] },
+    { id: "od-khordha-banpur", district: "Khordha", block: "Banpur", panchayats: ["Banpur", "Nachuni", "Gambharimunda", "Balugaon", "Niladriprasad", "Bishnupur", "Bhetanati"] },
+    { id: "od-khordha-begunia", district: "Khordha", block: "Begunia", panchayats: ["Begunia", "Bolagarh", "Pichukuli", "Durgapur", "Kantabada", "Sagarguan", "Deuli"] },
+    { id: "od-khordha-bolagarh", district: "Khordha", block: "Bolagarh", panchayats: ["Bolagarh", "Manikagoda", "Sanapadar", "Gopalpur", "Dhabaleswar", "Khadapada"] }
   ],
   'Puri': [
-    { id: "od-puri-sadar", district: "Puri", block: "Puri Sadar", panchayats: ["Baliguali", "Chhaitana", "Gopinathpur", "Samanga"] },
-    { id: "od-puri-nimapada", district: "Puri", block: "Nimapada", panchayats: ["Alipingal", "Denuan", "Gopabandhu", "Terundia"] }
+    { id: "od-puri-sadar", district: "Puri", block: "Puri Sadar", panchayats: ["Baliguali", "Chhaitana", "Gopinathpur", "Samanga", "Chandanpur", "Biraharekrushnapur", "Malatipatpur", "Satasankha"] },
+    { id: "od-puri-nimapada", district: "Puri", block: "Nimapada", panchayats: ["Alipingal", "Denuan", "Gopabandhu", "Terundia", "Nimapada Town", "Antuar", "Nagar", "Bhagabanpur"] },
+    { id: "od-puri-pipili", district: "Puri", block: "Pipili", panchayats: ["Pipili Town", "Teisipur", "Dhauli-Pipili", "Danamukundapur", "Govindpur", "Kausalaganga"] },
+    { id: "od-puri-gop", district: "Puri", block: "Gop", panchayats: ["Gop", "Konark", "Ramachandi", "Nagaspur", "Sutamukhi", "Liakhia"] },
+    { id: "od-puri-brahmagiri", district: "Puri", block: "Brahmagiri", panchayats: ["Brahmagiri", "Satapada", "Mirzapur", "Rebana Nuagaon", "Panasapada", "Alarnath"] }
   ],
   'Kendrapara': [
     { id: "od-kendrapara-rajkanika", district: "Kendrapara", block: "Rajkanika", panchayats: ["Dangarpatna", "Katana", "Barunadiha", "Meghapur", "Baghabuda", "Tarasahi", "Jaynagar", "Nanpur", "Jagulaipada"] },
-    { id: "od-kendrapara-aul", district: "Kendrapara", block: "Aul", panchayats: ["Demal", "Govindpur", "Batipada", "Keredagarh", "Sanmangala"] },
-    { id: "od-kendrapara-mahakalapada", district: "Kendrapara", block: "Mahakalapada", panchayats: ["Ramnagar", "Jambu", "Batighar", "Kharinasi", "Barada"] },
-    { id: "od-kendrapara-pattamundai", district: "Kendrapara", block: "Pattamundai", panchayats: ["Andhara", "Bachharai", "Alapua", "Dosia", "Srirampur"] },
-    { id: "od-kendrapara-marshaghai", district: "Kendrapara", block: "Marshaghai", panchayats: ["Berhampur", "Karatutha", "Dumuka", "Manikunda"] }
+    { id: "od-kendrapara-aul", district: "Kendrapara", block: "Aul", panchayats: ["Demal", "Govindpur", "Batipada", "Keredagarh", "Sanmangala", "Sansar"] },
+    { id: "od-kendrapara-mahakalapada", district: "Kendrapara", block: "Mahakalapada", panchayats: ["Ramnagar", "Jambu", "Batighar", "Kharinasi", "Barada", "Marshaghai"] },
+    { id: "od-kendrapara-pattamundai", district: "Kendrapara", block: "Pattamundai", panchayats: ["Andhara", "Bachharai", "Alapua", "Dosia", "Srirampur", "Damarpur"] },
+    { id: "od-kendrapara-marshaghai", district: "Kendrapara", block: "Marshaghai", panchayats: ["Berhampur", "Karatutha", "Dumuka", "Manikunda", "Angulai"] },
+    { id: "od-kendrapara-sadar", district: "Kendrapara", block: "Kendrapara Sadar", panchayats: ["Kendrapara Town", "Derabish", "Garadpur", "Kagaznagar", "Chagala", "Nial"] }
   ],
   'Jagatsinghpur': [
-    { id: "od-jagatsinghpur-sadar", district: "Jagatsinghpur", block: "Jagatsinghpur Sadar", panchayats: ["Kaduapada", "Chatra", "Puran", "Alipingal"] },
-    { id: "od-jagatsinghpur-paradip", district: "Jagatsinghpur", block: "Paradip (Kujang)", panchayats: ["Bhutamundai", "Nuagarh", "Sandhakuda", "Bijaychandrapur"] }
+    { id: "od-jagatsinghpur-sadar", district: "Jagatsinghpur", block: "Jagatsinghpur Sadar", panchayats: ["Kaduapada", "Chatra", "Puran", "Alipingal", "Gorakhnath", "Punanga"] },
+    { id: "od-jagatsinghpur-paradip", district: "Jagatsinghpur", block: "Paradip (Kujang)", panchayats: ["Bhutamundai", "Nuagarh", "Sandhakuda", "Bijaychandrapur", "Paradip Port", "Kujang Town"] },
+    { id: "od-jagatsinghpur-tirtol", district: "Jagatsinghpur", block: "Tirtol", panchayats: ["Tirtol", "Tarapur", "Manijanga", "Sankheswar", "Sanara", "Kanakpur"] }
   ],
   'Ganjam': [
     { id: "od-ganjam-berhampur", district: "Ganjam", block: "Berhampur", panchayats: ["Ankushpur", "Lathi", "Nimakhandi", "Golanthara", "Haladiapadar", "Kukudakhandi", "Brahmapur Town", "Bhakuri"] },
-    { id: "od-ganjam-chatrapur", district: "Ganjam", block: "Chatrapur", panchayats: ["Chatrapur", "Agastinuagaon", "Aryapalli", "Bipulingi", "Ganjam Town", "Kanamana", "Chamaakhandi"] }
+    { id: "od-ganjam-chatrapur", district: "Ganjam", block: "Chatrapur", panchayats: ["Chatrapur", "Agastinuagaon", "Aryapalli", "Bipulingi", "Ganjam Town", "Kanamana", "Chamaakhandi"] },
+    { id: "od-ganjam-hinjilicut", district: "Ganjam", block: "Hinjilicut", panchayats: ["Hinjilicut Town", "Pochilima", "Durbandha", "Sasan", "Ralaba", "Sikiri"] },
+    { id: "od-ganjam-bhanjanagar", district: "Ganjam", block: "Bhanjanagar", panchayats: ["Bhanjanagar", "Belaguntha", "Mujagada", "Kullada", "Gallery", "Inamalu"] }
   ],
   'Mayurbhanj': [
-    { id: "od-mayurbhanj-baripada", district: "Mayurbhanj", block: "Baripada", panchayats: ["Pundal", "Sankhabhanga", "Manitri", "Badasahi", "Lalazar", "Deuli", "Bhaunri", "Takatpur"] }
+    { id: "od-mayurbhanj-baripada", district: "Mayurbhanj", block: "Baripada", panchayats: ["Pundal", "Sankhabhanga", "Manitri", "Badasahi", "Lalazar", "Deuli", "Bhaunri", "Takatpur"] },
+    { id: "od-mayurbhanj-rairangpur", district: "Mayurbhanj", block: "Rairangpur", panchayats: ["Rairangpur Town", "Bahalda", "Badampahar", "Gorumahisani", "Gidhighaty", "Tiring"] }
   ],
   'Jajpur': [
-    { id: "od-jajpur-sadar", district: "Jajpur", block: "Jajpur Sadar", panchayats: ["Bari", "Binjharpur", "Dharmasala", "Sukinda", "Kalinganagar", "Vyasanagar", "Korei", "Rasulpur"] }
+    { id: "od-jajpur-sadar", district: "Jajpur", block: "Jajpur Sadar", panchayats: ["Bari", "Binjharpur", "Dharmasala", "Sukinda", "Kalinganagar", "Vyasanagar", "Korei", "Rasulpur"] },
+    { id: "od-jajpur-road", district: "Jajpur", block: "Vyasanagar (Jajpur Road)", panchayats: ["Jajpur Road Town", "Dhabalgiri", "Chorda", "Santhapur", "Kalinganagar Industrial Zone"] }
   ]
 };
 
