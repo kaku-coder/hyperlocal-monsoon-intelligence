@@ -35,3 +35,5 @@ const startServer = (portToUse) => {
 };
 
 startServer(PORT);
+
+/** Express Gateway - Hyperlocal Monsoon Intelligence API Server */
