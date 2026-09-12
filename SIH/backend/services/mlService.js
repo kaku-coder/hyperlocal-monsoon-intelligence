@@ -134,8 +134,57 @@ const explainWithML = async (requestPayload) => {
   };
 };
 
+const fetchNowcast = async (requestPayload) => {
+  try {
+    const response = await fetch(`${ML_SERVICE_URL}/nowcast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestPayload)
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return { ...data, source: "FastAPI-ML-Nowcaster" };
+    }
+  } catch (err) {
+    // Graceful fallback
+  }
+
+  const loc = findLocation(requestPayload.district_name, requestPayload.block_name);
+  return {
+    status: "success",
+    source: "Embedded-Nowcast-Fallback",
+    location: {
+      district: loc.district,
+      block: loc.block,
+      lat: loc.coordinates.lat,
+      lon: loc.coordinates.lon
+    },
+    nowcast: {
+      rain_within_12h: loc.metrics.rainfall_anomaly_percent < -15,
+      expected_rainfall_12h_mm: loc.metrics.rainfall_24h_mm || 2.4,
+      total_rainfall_24h_mm: loc.metrics.rainfall_24h_mm || 2.4,
+      max_hourly_precip_mm: loc.metrics.rainfall_24h_mm ? Math.min(loc.metrics.rainfall_24h_mm * 0.6, 12) : 1.4,
+      heavy_rain_in_12h: loc.metrics.heavy_rain_probability >= 0.6,
+      heavy_rain_probability: loc.metrics.heavy_rain_probability,
+      risk_level: loc.metrics.dominant_risk,
+      alert_severity: loc.metrics.heavy_rain_probability >= 0.6
+        ? "HEAVY_RAIN"
+        : (loc.metrics.rainfall_anomaly_percent < -15 ? "RAIN" : "NONE"),
+      earliest_rain_time: null,
+      message_en: `Current conditions for ${loc.block}: heavy rain prob ${Math.round(loc.metrics.heavy_rain_probability * 100)}%.`,
+      message_hi: `${loc.block} ke liye vartaman sthiti.`,
+      message_or: `${loc.block} re bartaman sthiti.`
+    },
+    hourly: [],
+    model_version: "v1.2-fallback",
+    generated_at: new Date().toISOString(),
+    is_prototype: true
+  };
+};
+
 export {
   predictWithML,
-  explainWithML
+  explainWithML,
+  fetchNowcast
 };
 

@@ -188,15 +188,28 @@ const LOCAL_ODISHA_DB = {
   ]
 };
 
+const normalizeDistrictKey = (district) => {
+  if (!district) return 'Khordha';
+  const d = district.toLowerCase().trim();
+  if (d.includes('balasore') || d.includes('baleswar')) return 'Balasore';
+  if (d.includes('khordha') || d.includes('khurda') || d.includes('khorda')) return 'Khordha';
+  if (d.includes('bhadrak')) return 'Bhadrak';
+  if (d.includes('cuttack')) return 'Cuttack';
+  if (d.includes('puri')) return 'Puri';
+  if (d.includes('kendrapara') || d.includes('kendrapada')) return 'Kendrapara';
+  if (d.includes('ganjam')) return 'Ganjam';
+  if (d.includes('mayurbhanj')) return 'Mayurbhanj';
+  if (d.includes('jajpur')) return 'Jajpur';
+  if (d.includes('sambalpur')) return 'Sambalpur';
+  return 'Khordha';
+};
+
 export const getLocalFallbackBlocks = (district) => {
-  if (!district) return LOCAL_ODISHA_DB['Khordha'];
-  const key = Object.keys(LOCAL_ODISHA_DB).find(k => k.toLowerCase() === district.toLowerCase());
-  if (key) return LOCAL_ODISHA_DB[key];
-  
-  return [
-    { id: `od-${district.toLowerCase()}-sadar`, district: district, block: `${district} Sadar`, panchayats: [`${district} Town`, "Gopinathpur", "Nuagaon", "Ramchandrapur"] },
-    { id: `od-${district.toLowerCase()}-north`, district: district, block: `${district} North`, panchayats: ["Alipingal", "Kotasahi", "Haripur", "Sugo"] }
-  ];
+  const normKey = normalizeDistrictKey(district);
+  if (LOCAL_ODISHA_DB[normKey]) {
+    return LOCAL_ODISHA_DB[normKey];
+  }
+  return LOCAL_ODISHA_DB['Balasore'];
 };
 
 export const fetchBlocks = async (district) => {
