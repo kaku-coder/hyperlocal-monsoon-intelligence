@@ -16,6 +16,7 @@ import {
   PhoneCall, 
   Share2,
   ChevronDown,
+  ChevronRight,
   Layers,
   Sparkles,
   Info,

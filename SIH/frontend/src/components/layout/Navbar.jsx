@@ -126,11 +126,11 @@ export const Navbar = () => {
   };
 
   const renderLocationSelects = (isMobile = false) => (
-    <div className={`items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs shadow-inner min-w-0 shrink ${isMobile ? 'flex flex-wrap' : 'hidden xl:flex'}`}>
+    <div className={`items-center gap-1 bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-xl text-xs shadow-inner min-w-0 shrink overflow-hidden ${isMobile ? 'flex flex-wrap gap-1.5' : 'hidden xl:flex'}`}>
       <div className="flex items-center gap-1 text-slate-400 shrink-0">
         <MapPin className="h-3.5 w-3.5 text-sky-400" />
-        <span className="font-semibold text-slate-300">{selectedState}</span>
-        <ChevronRight className="h-3 w-3 text-slate-600" />
+        <span className="font-semibold text-slate-300 hidden 2xl:inline">{selectedState}</span>
+        <ChevronRight className="h-3 w-3 text-slate-600 hidden 2xl:inline" />
       </div>
 
       {/* District Dropdown — shows ALL districts */}
@@ -138,7 +138,7 @@ export const Navbar = () => {
         value={selectedDistrict || ''}
         onChange={handleDistrictChange}
         title={`${districtCount} districts available`}
-        className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer max-w-[130px] shrink"
+        className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-1.5 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer max-w-[95px] 2xl:max-w-[130px] shrink truncate text-[11px]"
       >
         {districtCount === 0 && <option value="">Loading…</option>}
         {(districts || []).map(d => (
@@ -155,7 +155,7 @@ export const Navbar = () => {
         value={selectedBlock || ''}
         onChange={handleBlockChange}
         title={`${blockCount} blocks in ${selectedDistrict}`}
-        className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer max-w-[140px] shrink"
+        className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-1.5 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer max-w-[105px] 2xl:max-w-[140px] shrink truncate text-[11px]"
       >
         {blockCount === 0 && <option value="">No blocks</option>}
         {(blocks || []).map(b => (
@@ -172,7 +172,7 @@ export const Navbar = () => {
         value={selectedPanchayat || ''}
         onChange={handlePanchayatChange}
         title={`${gpCount} GPs in ${selectedBlock}`}
-        className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer max-w-[130px] shrink"
+        className="bg-slate-800/80 hover:bg-slate-800 text-emerald-300 font-medium rounded-lg px-1.5 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer max-w-[95px] 2xl:max-w-[130px] shrink truncate text-[11px]"
       >
         {gpCount === 0 && <option value="">No GPs</option>}
         {activePanchayats.map(p => (
@@ -183,14 +183,14 @@ export const Navbar = () => {
       </select>
 
       {/* Place / GP / Pincode Universal Search Input */}
-      <form onSubmit={handleNavSearch} className="flex items-center gap-1 bg-slate-800/90 border border-slate-700 rounded-lg px-2 py-1 shrink-0">
+      <form onSubmit={handleNavSearch} className="flex items-center gap-1 bg-slate-800/90 border border-slate-700 rounded-lg px-1.5 py-1 shrink-0">
         <Search className="h-3 w-3 text-cyan-400 shrink-0" />
         <input
           type="text"
           value={navSearch}
           onChange={(e) => setNavSearch(e.target.value)}
-          placeholder="Search Place / GP / PIN..."
-          className="w-24 sm:w-32 bg-transparent text-[11px] text-white placeholder-slate-400 focus:outline-none font-medium"
+          placeholder="Search Place/GP/PIN..."
+          className="w-20 2xl:w-28 bg-transparent text-[11px] text-white placeholder-slate-400 focus:outline-none font-medium"
         />
         <button type="submit" disabled={navSearching} className="text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-1.5 py-0.5 rounded cursor-pointer">
           {navSearching ? '...' : 'Go'}
@@ -244,7 +244,7 @@ export const Navbar = () => {
         {renderLocationSelects(false)}
 
         {/* Right: Mode Switcher, Language & Auth Button (ALWAYS VISIBLE & UNCLIPPED) */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto z-10">
           
           {/* Toggle between Officer Command Center and Farmer Mode */}
           {activeTab === 'farmer-mode' ? (
