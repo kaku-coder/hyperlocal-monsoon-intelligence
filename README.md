@@ -99,6 +99,7 @@ This platform exists to close the gap between **where weather science happens** 
 | 📜 **Historical Trends** | 2021–2026 retrospective validation, dry-spell lengths, onset-shift analysis |
 | 🩺 **System Health** | Subsystem monitors, latency meters, model-run stamps, governance notices |
 | 🧠 **ML Microservice** | Python FastAPI probabilistic prediction + explainability service |
+| 🌐 **Live Web AI Search** | Real-time SerpApi Google Search & Tavily AI Web Intelligence for ICAR/KVK advisories & mandi prices |
 | 🔤 **Localization Engine** | Full EN / HI / OR translation engine with text-to-speech |
 
 ---
