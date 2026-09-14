@@ -109,17 +109,15 @@ export const Navbar = () => {
         } catch (e) { }
       } else {
         try {
-          const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Odisha+India&format=json&limit=1`);
+          const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`);
           const nomData = await nomRes.json();
           if (nomData && nomData.length) {
-            const disp = nomData[0].display_name || '';
-            const parts = disp.split(',').map(s => s.trim());
-            for (const pt of parts) {
-              if (districts?.includes(pt)) {
-                districtName = pt;
-                break;
-              }
-            }
+            const item = nomData[0];
+            const addr = item.address || {};
+            const district = addr.state_district || addr.district || addr.county || addr.city_district || addr.city || '';
+            districtName = district.replace(/ district/i, '').trim();
+            blockName = addr.suburb || addr.town || addr.village || addr.city || query;
+            locationName = addr.village || addr.suburb || addr.town || item.name || query;
           }
         } catch (e) { }
       }

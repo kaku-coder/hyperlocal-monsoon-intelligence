@@ -121,7 +121,7 @@ export const RiskMapPage = () => {
   };
 
   const normalizeDistrictName = (distName) => {
-    if (!distName) return 'Khordha';
+    if (!distName) return '';
     const lower = distName.toLowerCase();
     if (lower.includes('baleswar') || lower.includes('balasore')) return 'Balasore';
     if (lower.includes('khurda') || lower.includes('khordha')) return 'Khordha';
@@ -130,6 +130,38 @@ export const RiskMapPage = () => {
     if (lower.includes('keonjhar') || lower.includes('kendujhar')) return 'Keonjhar';
     if (lower.includes('kandhamal') || lower.includes('phulbani')) return 'Kandhamal';
     return distName;
+  };
+
+  const parseLocationFromNominatim = (item, fallbackQuery) => {
+    if (!item) return null;
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    const addr = item.address || {};
+
+    const state = addr.state || addr.region || '';
+    const rawDistrict = addr.state_district || addr.district || addr.county || addr.city_district || addr.city || '';
+    const district = rawDistrict.replace(/ district/i, '').trim() || state || fallbackQuery;
+    const place = addr.village || addr.suburb || addr.town || addr.city || addr.municipality || addr.neighbourhood || addr.amenity || item.name || fallbackQuery;
+
+    let countrySubtitle = '';
+    if (state && state.toLowerCase() === 'odisha') {
+      countrySubtitle = district && district.toLowerCase() !== 'odisha' ? `${district}, Odisha` : 'Odisha';
+    } else if (district && state && district.toLowerCase() !== state.toLowerCase()) {
+      countrySubtitle = `${district}, ${state}`;
+    } else if (state) {
+      countrySubtitle = `${state}, ${addr.country || 'India'}`;
+    } else {
+      countrySubtitle = addr.country || 'India';
+    }
+
+    return {
+      lat,
+      lon,
+      placeName: place,
+      districtName: district,
+      stateName: state,
+      countrySubtitle
+    };
   };
 
   // Fetch RainViewer real-time cloud & precipitation radar timestamp
@@ -212,7 +244,7 @@ export const RiskMapPage = () => {
 
       for (const query of searchTerms) {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`);
           const data = await res.json();
           if (data && data.length) {
             finalLat = parseFloat(data[0].lat);
@@ -297,7 +329,7 @@ export const RiskMapPage = () => {
       let lon = null;
       let locationName = query;
       let districtName = '';
-      let blockName = '';
+      let countrySubtitle = '';
       let postOfficesList = [];
       const isPincode = /^\d{6}$/.test(query);
 
@@ -309,9 +341,9 @@ export const RiskMapPage = () => {
           if (pinData[0]?.Status === 'Success' && pinData[0]?.PostOffice?.length) {
             postOfficesList = pinData[0].PostOffice;
             const mainPo = postOfficesList[0];
-            districtName = normalizeDistrictName(mainPo.District);
-            blockName = mainPo.Block || mainPo.Name;
+            districtName = mainPo.District;
             locationName = mainPo.Name;
+            countrySubtitle = mainPo.State ? `${districtName}, ${mainPo.State}` : `${districtName}, India`;
           }
         } catch (err) {
           console.warn('Postal pincode API error:', err);
@@ -319,9 +351,8 @@ export const RiskMapPage = () => {
 
         // Fetch coordinates from OpenStreetMap Nominatim for pincode
         const geoQueries = [
-          `https://nominatim.openstreetmap.org/search?q=${query}+India&format=json&limit=1`,
-          locationName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null,
-          blockName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(blockName)}+${encodeURIComponent(districtName)}+Odisha+India&format=json&limit=1` : null
+          `https://nominatim.openstreetmap.org/search?q=${query}+India&format=json&limit=1&addressdetails=1`,
+          locationName ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}+${encodeURIComponent(districtName)}+India&format=json&limit=1&addressdetails=1` : null
         ].filter(Boolean);
 
         for (const queryUrl of geoQueries) {
@@ -329,8 +360,13 @@ export const RiskMapPage = () => {
             const nomRes = await fetch(queryUrl);
             const nomData = await nomRes.json();
             if (nomData && nomData.length) {
-              lat = parseFloat(nomData[0].lat);
-              lon = parseFloat(nomData[0].lon);
+              const parsed = parseLocationFromNominatim(nomData[0], locationName);
+              if (parsed) {
+                lat = parsed.lat;
+                lon = parsed.lon;
+                if (!countrySubtitle) countrySubtitle = parsed.countrySubtitle;
+                if (!districtName) districtName = parsed.districtName;
+              }
               break;
             }
           } catch (e) {
@@ -339,12 +375,12 @@ export const RiskMapPage = () => {
         }
 
         if (!districtName) districtName = selectedDistrict || 'Khordha';
-        if (!blockName) blockName = locationName || `PIN ${query}`;
+        if (!countrySubtitle) countrySubtitle = `${districtName}, Odisha`;
       } else {
-        // 2. Geocode Place / GP / Village Name via OpenStreetMap Nominatim
+        // 2. Geocode Place / GP / Village / State Name via OpenStreetMap Nominatim
         const geoQueries = [
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Odisha+India&format=json&limit=1`,
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+India&format=json&limit=1`
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`,
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+India&format=json&limit=1&addressdetails=1`
         ];
 
         for (const queryUrl of geoQueries) {
@@ -352,16 +388,13 @@ export const RiskMapPage = () => {
             const nomRes = await fetch(queryUrl);
             const nomData = await nomRes.json();
             if (nomData && nomData.length) {
-              lat = parseFloat(nomData[0].lat);
-              lon = parseFloat(nomData[0].lon);
-              const disp = nomData[0].display_name || '';
-              const parts = disp.split(',').map(s => s.trim());
-              for (const pt of parts) {
-                const matchedD = normalizeDistrictName(pt);
-                if (matchedD && ODISHA_DISTRICT_COORDS[matchedD]) {
-                  districtName = matchedD;
-                  break;
-                }
+              const parsed = parseLocationFromNominatim(nomData[0], query);
+              if (parsed) {
+                lat = parsed.lat;
+                lon = parsed.lon;
+                locationName = parsed.placeName;
+                districtName = parsed.districtName;
+                countrySubtitle = parsed.countrySubtitle;
               }
               break;
             }
@@ -369,27 +402,26 @@ export const RiskMapPage = () => {
             console.warn('Place Nominatim error:', e);
           }
         }
-
-        if (!districtName) districtName = selectedDistrict || 'Khordha';
-        blockName = selectedBlock || 'Bhubaneswar';
       }
 
-      // Fallback to district lookup if geocoding yields no coords
+      // Fallback to district lookup ONLY if geocoding yields no coords at all
       if (!lat || !lon) {
-        const lookupKey = districtName || 'Khordha';
+        const lookupKey = normalizeDistrictName(query) || districtName || selectedDistrict || 'Khordha';
         const dCoords = ODISHA_DISTRICT_COORDS[lookupKey] || ODISHA_DISTRICT_COORDS['Khordha'];
         lat = dCoords.lat;
         lon = dCoords.lon;
+        districtName = lookupKey;
+        countrySubtitle = `${districtName}, Odisha`;
       }
 
-      const fullDisplayName = isPincode ? `${locationName || blockName} (${query})` : locationName;
+      const fullDisplayName = isPincode ? `${locationName} (${query})` : locationName;
 
       // Update map center & fetch weather
-      setCoords({ lat, lon, name: fullDisplayName, country: `${districtName}, Odisha` });
+      setCoords({ lat, lon, name: fullDisplayName, country: countrySubtitle });
       await fetchWeather(lat, lon);
 
-      // Globally update AppContext & Navbar location
-      changeLocation(districtName, blockName, null, locationName);
+      // Globally update AppContext location if district exists
+      changeLocation(districtName, locationName, null, locationName);
       if (isPincode) localStorage.setItem('moes_user_pincode', query);
 
       // Generate dynamic local GP / surrounding markers
@@ -422,7 +454,7 @@ export const RiskMapPage = () => {
       setLocalMarkers(newMarkers);
       await fetchWeatherForMarkers(newMarkers);
 
-      setStatus(`📍 ${fullDisplayName}, ${districtName}`);
+      setStatus(`📍 ${fullDisplayName}, ${countrySubtitle}`);
     } catch (err) {
       console.error('Search error:', err);
       setStatus(lang === 'hi' ? 'खोज में त्रुटि' : lang === 'or' ? 'ସନ୍ଧାନ ତ୍ରୁଟି' : 'Search error');
