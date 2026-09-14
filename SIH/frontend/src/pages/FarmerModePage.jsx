@@ -3,23 +3,23 @@ import { useApp } from '../context/AppContext';
 import { translations } from '../utils/localization';
 import { playTextToSpeech, stopTextToSpeech } from '../utils/tts';
 import { checkWeatherAlert, fetchTavilyAgriSearch, buildCuratedAgriIntel } from '../services/api';
-import { 
-  Sprout, 
-  CloudRain, 
-  SunMedium, 
-  Volume2, 
-  VolumeX, 
-  MapPin, 
+import {
+  Sprout,
+  CloudRain,
+  SunMedium,
+  Volume2,
+  VolumeX,
+  MapPin,
   Navigation,
-  Calendar, 
-  CheckCircle2, 
+  Calendar,
+  CheckCircle2,
   AlertTriangle,
   XCircle,
-  ChevronDown, 
-  ChevronRight, 
-  Sparkles, 
-  Radio, 
-  BellRing, 
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  Radio,
+  BellRing,
   Loader2,
   ShieldAlert,
   ShieldCheck,
@@ -34,10 +34,6 @@ import {
 
 const CROP_CATEGORIES = ['All', 'Cereals', 'Pulses', 'Oilseeds', 'Vegetables', 'Spices', 'Cash Crops', 'Fruits'];
 
-/**
- * Full Crop Catalog Database for Hyperlocal Farmer Advisories
- * @type {Array<{id: string, category: string, name: string, name_hi: string, name_or: string, icon: string}>}
- */
 const CROP_DATABASE = [
   // 1. Cereals & Millets
   { id: 'rice', category: 'Cereals', name: 'Rice (Paddy)', name_hi: 'धान (चावल)', name_or: 'ଧାନ (Paddy)', icon: '🌾' },
@@ -80,8 +76,8 @@ const CROP_DATABASE = [
 ];
 
 export const FarmerModePage = () => {
-  const { 
-    farmerLanguage, 
+  const {
+    farmerLanguage,
     setFarmerLanguage,
     selectedBlock,
     setSelectedBlock,
@@ -235,64 +231,64 @@ export const FarmerModePage = () => {
         headline: lang === 'hi'
           ? `उच्च सूखा जोखिम: ${cropLabel} की बुवाई/रोपाई 5-7 दिनों के लिए टालें।`
           : lang === 'or'
-          ? `ଉଚ୍ଚ ଶୁଖିଲା ରୋଗ ସତର୍କତା: ${cropLabel} ବୁଣା ୫-୭ ଦିନ ବିଳମ୍ବ କରନ୍ତୁ।`
-          : `High Dry Spell Risk: Delay ${cropLabel} Sowing/Transplanting by 5–7 Days.`,
+            ? `ଉଚ୍ଚ ଶୁଖିଲା ରୋଗ ସତର୍କତା: ${cropLabel} ବୁଣା ୫-୭ ଦିନ ବିଳମ୍ବ କରନ୍ତୁ।`
+            : `High Dry Spell Risk: Delay ${cropLabel} Sowing/Transplanting by 5–7 Days.`,
         dos: lang === 'hi'
           ? [
-              "नर्सरी में सुबह-शाम हल्का पानी देकर पौध बचाएं।",
-              "आपातकालीन सिंचाई (पंप सेट या खेत तालाब) तैयार रखें।",
-              "नमी बचाने के लिए खेतों में पुआल/मल्चिंग का प्रयोग करें।"
-            ]
+            "नर्सरी में सुबह-शाम हल्का पानी देकर पौध बचाएं।",
+            "आपातकालीन सिंचाई (पंप सेट या खेत तालाब) तैयार रखें।",
+            "नमी बचाने के लिए खेतों में पुआल/मल्चिंग का प्रयोग करें।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "ତଳି ଘରେ ସକାଳ-ସନ୍ଧ୍ୟାରେ ହାଲୁକା ପାଣି ଦିଅନ୍ତୁ।",
               "ଜରୁରୀକାଳୀନ ଜଳସେଚନ (ପମ୍ପ ସେଟ୍) ପ୍ରସ୍ତୁତ ରଖନ୍ତୁ।",
               "ମାଟିର ଆର୍ଦ୍ରତା ରଖିବା ପାଇଁ ନଡ଼ା/ମଲଚିଂ ବ୍ୟବହାର କରନ୍ତୁ।"
             ]
-          : [
+            : [
               "Maintain light nursery watering early morning or late evening.",
               "Keep supplemental irrigation pumps or farm ponds on standby.",
               "Apply straw mulching to retain soil moisture in root zones."
             ],
         donts: lang === 'hi'
           ? [
-              "सूखी या कम नमी वाली मिट्टी में यूरिया/खाद न डालें।",
-              "बिना सिंचाई सुविधा के मुख्य खेत में रोपाई न करें।"
-            ]
+            "सूखी या कम नमी वाली मिट्टी में यूरिया/खाद न डालें।",
+            "बिना सिंचाई सुविधा के मुख्य खेत में रोपाई न करें।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "ଶୁଖିଲା ମାଟିରେ ରାସାୟନିକ ସାର ପ୍ରୟୋଗ କରନ୍ତୁ ନାହିଁ।",
               "ଜଳସେଚନ ବିନା ଜମିରେ ତଳି ରୁଅନ୍ତୁ ନାହିଁ।"
             ]
-          : [
+            : [
               "Do NOT broadcast urea/fertilizer into dry soil right now.",
               "Do NOT transplant seedlings into un-irrigated dry fields."
             ],
         advantages: lang === 'hi'
           ? [
-              "30-40% बीज और पौध की बर्बादी बचती है।",
-              "उर्वरक की बर्बादी और जड़ों के जलने से बचाव।"
-            ]
+            "30-40% बीज और पौध की बर्बादी बचती है।",
+            "उर्वरक की बर्बादी और जड़ों के जलने से बचाव।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "୩୦-୪୦% ବିହନ ଓ ତଳି ନଷ୍ଟ ହେବାରୁ ରକ୍ଷା ମିଳେ।",
               "ସାର ନଷ୍ଟ ହେବା ଓ ଚେର ପୋଡ଼ିଯିବା ବନ୍ଦ ହୁଏ।"
             ]
-          : [
+            : [
               "Saves 30–40% seed and seedling mortality costs.",
               "Prevents fertilizer volatilization & root scorching losses."
             ],
         risks: lang === 'hi'
           ? [
-              "सूखे में रोपाई करने से 60% तक पौधे सूखने का खतरा।",
-              "तेज धूप से खाद बेकार हो जाती है।"
-            ]
+            "सूखे में रोपाई करने से 60% तक पौधे सूखने का खतरा।",
+            "तेज धूप से खाद बेकार हो जाती है।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "ଶୁଖିଲାରେ ରୁଆ କଲେ ୬୦% ତଳି ଶୁଖିଯିବାର ଆଶଙ୍କା।",
               "ସାର ନଷ୍ଟ ହୋଇ ଜମିର ଉର୍ବରତା କମିଯାଏ।"
             ]
-          : [
+            : [
               "Up to 60% seedling wilting if transplanted in dry soil.",
               "Wastage of expensive fertilizers due to heat volatilization."
             ]
@@ -308,64 +304,64 @@ export const FarmerModePage = () => {
         headline: lang === 'hi'
           ? `भारी बारिश की चेतावनी! ${cropLabel} के खेत से तुरंत जल निकासी नाली बनाएं।`
           : lang === 'or'
-          ? `ପ୍ରବଳ ବର୍ଷା ସତର୍କତା! ${cropLabel} ଜମିରୁ ତୁରନ୍ତ ନିଷ୍କାସନ ନାଳି ଖୋଲନ୍ତୁ।`
-          : `Heavy Rainfall Alert! Clear Drainage Outlets Immediately for ${cropLabel}.`,
+            ? `ପ୍ରବଳ ବର୍ଷା ସତର୍କତା! ${cropLabel} ଜମିରୁ ତୁରନ୍ତ ନିଷ୍କାସନ ନାଳି ଖୋଲନ୍ତୁ।`
+            : `Heavy Rainfall Alert! Clear Drainage Outlets Immediately for ${cropLabel}.`,
         dos: lang === 'hi'
           ? [
-              "जलभराव से बचने के लिए खेत के निकास रास्ते तुरंत खोलें।",
-              "नर्सरी की मेढ़ों को ऊंचा और मजबूत करें।",
-              "बारिश रुकने के बाद कवकनाशी (Fungicide) का छिड़काव करें।"
-            ]
+            "जलभराव से बचने के लिए खेत के निकास रास्ते तुरंत खोलें।",
+            "नर्सरी की मेढ़ों को ऊंचा और मजबूत करें।",
+            "बारिश रुकने के बाद कवकनाशी (Fungicide) का छिड़काव करें।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "ଜମିରେ ପାଣି ଜମିବା ବନ୍ଦ କରିବା ପାଇଁ ନାଳି ଖୋଲନ୍ତୁ।",
               "ତଳି ଘରର ଆଡ଼ି ମଜବୁତ୍ କରନ୍ତୁ।",
               "ବର୍ଷା ଛାଡ଼ିବା ପରେ ଫିଙ୍ଗିନାଶକ ସିଞ୍ଚନ କରନ୍ତୁ।"
             ]
-          : [
+            : [
               "Clear field drainage bunds to prevent standing water accumulation.",
               "Reinforce nursery boundaries and protect young shoots.",
               "Spray bio-fungicide after heavy downpour stops."
             ],
         donts: lang === 'hi'
           ? [
-              "बारिश के दौरान कीटनाशक या खाद का छिड़काव न करें।",
-              "जड़ों के पास 24 घंटे से ज्यादा पानी न जमने दें।"
-            ]
+            "बारिश के दौरान कीटनाशक या खाद का छिड़काव न करें।",
+            "जड़ों के पास 24 घंटे से ज्यादा पानी न जमने दें।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "ବର୍ଷା ସମୟରେ କୀଟନାଶକ କିମ୍ବା ସାର ସିଞ୍ଚନ କରନ୍ତୁ ନାହିଁ।",
               "ଗଛ ମୂଳେ ୨୪ ଘଣ୍ଟାରୁ ଅଧିକ ପାଣି ଜମିବାକୁ ଦିଅନ୍ତୁ ନାହିଁ।"
             ]
-          : [
+            : [
               "Do NOT apply liquid chemical sprays during heavy rain.",
               "Do NOT allow waterlogging around roots for >24 hours."
             ],
         advantages: lang === 'hi'
           ? [
-              "जड़ों को सड़ने से बचाता है और ऑक्सीजन बनी रहती है।",
-              "खाद और उपजाऊ मिट्टी को बहने से रोकता है।"
-            ]
+            "जड़ों को सड़ने से बचाता है और ऑक्सीजन बनी रहती है।",
+            "खाद और उपजाऊ मिट्टी को बहने से रोकता है।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "ଚେର ସଢ଼ିଯିବାରୁ ରକ୍ଷା କରେ।",
               "ମାଟିର ସାର ବୋହିଯିବା ବନ୍ଦ କରେ।"
             ]
-          : [
+            : [
               "Protects root aeration and prevents root-rot decay.",
               "Prevents valuable fertilizer leaching and soil erosion."
             ],
         risks: lang === 'hi'
           ? [
-              "48 घंटे से अधिक जलभराव से पौधे पूरी तरह गल जाते हैं।",
-              "पत्ती झुलसा और फफूंद जनित रोगों का भारी प्रकोप।"
-            ]
+            "48 घंटे से अधिक जलभराव से पौधे पूरी तरह गल जाते हैं।",
+            "पत्ती झुलसा और फफूंद जनित रोगों का भारी प्रकोप।"
+          ]
           : lang === 'or'
-          ? [
+            ? [
               "୪୮ ଘଣ୍ଟାରୁ ଅଧିକ ପାଣି ଜମିଲେ ତଳି ପୂରା ପଚିଯିବ।",
               "କବକ ଓ ପତ୍ର ପୋଡ଼ା ରୋଗ ବ୍ୟାପିବାର ଆଶଙ୍କା।"
             ]
-          : [
+            : [
               "Total seedling rot & mortality if flooded for >48 hours.",
               "High outbreak risk of fungal leaf blast & bacterial blight."
             ]
@@ -380,64 +376,64 @@ export const FarmerModePage = () => {
       headline: lang === 'hi'
         ? `अनुकूल मौसम: ${cropLabel} की खेत तैयारी एवं बुवाई के लिए उत्तम समय।`
         : lang === 'or'
-        ? `ଅନୁକୂଳ ପାଣିପାଗ: ${cropLabel} ଜମି କାମ ଓ ବୁଣା ପାଇଁ ଉତ୍ତମ ସମୟ।`
-        : `Favorable Weather: Optimal Window for ${cropLabel} Field Preparation & Sowing.`,
+          ? `ଅନୁକୂଳ ପାଣିପାଗ: ${cropLabel} ଜମି କାମ ଓ ବୁଣା ପାଇଁ ଉତ୍ତମ ସମୟ।`
+          : `Favorable Weather: Optimal Window for ${cropLabel} Field Preparation & Sowing.`,
       dos: lang === 'hi'
         ? [
-            "खेत की गहरी जुताई और आधार खाद (Basal Fertilizer) का प्रयोग करें।",
-            "बुवाई से पहले ट्राइकोडर्मा / पीएसबी से बीज उपचार अवश्य करें।",
-            "पौधों के बीच उचित कतारबद्ध दूरी बनाकर बुवाई करें।"
-          ]
+          "खेत की गहरी जुताई और आधार खाद (Basal Fertilizer) का प्रयोग करें।",
+          "बुवाई से पहले ट्राइकोडर्मा / पीएसबी से बीज उपचार अवश्य करें।",
+          "पौधों के बीच उचित कतारबद्ध दूरी बनाकर बुवाई करें।"
+        ]
         : lang === 'or'
-        ? [
+          ? [
             "ଜମି ଚାଷ, ସମତଳ ଓ ମୂଳ ସାର ପ୍ରୟୋଗ କରନ୍ତୁ।",
             "ବିହନ ବୁଣିବା ପୂର୍ବରୁ ବିହନ ଶୋଧନ କରନ୍ତୁ।",
             "ଗଛ ମଧ୍ୟରେ ଉଚିତ୍ ବ୍ୟବଧାନ ରଖନ୍ତୁ।"
           ]
-        : [
+          : [
             "Proceed with field harrowing and basal manure application.",
             "Always complete Trichoderma seed treatment prior to sowing.",
             "Maintain optimal line-sowing distance for aeration."
           ],
       donts: lang === 'hi'
         ? [
-            "बिना बीज उपचार के सीधे बुवाई न करें।",
-            "कच्ची गोबर खाद का उपयोग न करें जिससे दीमक न लगे।"
-          ]
+          "बिना बीज उपचार के सीधे बुवाई न करें।",
+          "कच्ची गोबर खाद का उपयोग न करें जिससे दीमक न लगे।"
+        ]
         : lang === 'or'
-        ? [
+          ? [
             "ବିହନ ଶୋଧନ ନକରି ବୁଣନ୍ତୁ ନାହିଁ।",
             "କଞ୍ଚା ଖତ ଜମିରେ ଦିଅନ୍ତୁ ନାହିଁ।"
           ]
-        : [
+          : [
             "Do NOT skip seed treatment before field broadcasting.",
             "Do NOT apply raw un-decomposed manure to prevent termites."
           ],
       advantages: lang === 'hi'
         ? [
-            "90-95% तक स्वस्थ अंकुरण दर प्राप्त होती है।",
-            "मजबूत जड़ प्रणाली और कीट-प्रतिरोधी पौध तैयार होती है।"
-          ]
+          "90-95% तक स्वस्थ अंकुरण दर प्राप्त होती है।",
+          "मजबूत जड़ प्रणाली और कीट-प्रतिरोधी पौध तैयार होती है।"
+        ]
         : lang === 'or'
-        ? [
+          ? [
             "ଗଜା ହାର ୯୦-୯୫% ପର୍ଯ୍ୟନ୍ତ ବୃଦ୍ଧି ପାଏ।",
             "ମଜବୁତ୍ ଚେର ଓ ଉତ୍ତମ ତଳି ବୃଦ୍ଧି ହୁଏ।"
           ]
-        : [
+          : [
             "Achieves maximum germination rate up to 92–95%.",
             "Promotes robust root vigor and disease resistance."
           ],
       risks: lang === 'hi'
         ? [
-            "देरी से बुवाई करने पर पैदावार 15-20% घट सकती है।",
-            "बीज उपचार न करने पर मृदा जनित बीमारियों का खतरा।"
-          ]
+          "देरी से बुवाई करने पर पैदावार 15-20% घट सकती है।",
+          "बीज उपचार न करने पर मृदा जनित बीमारियों का खतरा।"
+        ]
         : lang === 'or'
-        ? [
+          ? [
             "ବିଳମ୍ବରେ ବୁଣିଲେ ଅମଳ କମିଯାଏ।",
             "ବିହନ ଶୋଧନ ନକଲେ ରୋଗ ବ୍ୟାପେ।"
           ]
-        : [
+          : [
             "Delayed sowing reduces yield potential by 15–20%.",
             "Omission of seed treatment invites soil-borne wilt."
           ]
@@ -509,9 +505,9 @@ export const FarmerModePage = () => {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-950 px-3 py-4 sm:p-6 flex flex-col items-center w-full">
-      
+
       <div className="w-full max-w-7xl mx-auto space-y-5 font-sans">
-        
+
         {/* Top Header Card */}
         <div className="rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-800 p-4 text-white shadow-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -543,11 +539,10 @@ export const FarmerModePage = () => {
               <button
                 key={l}
                 onClick={() => setFarmerLanguage(l)}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                  farmerLanguage === l
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${farmerLanguage === l
                     ? 'bg-white text-emerald-950 shadow-md font-extrabold'
                     : 'text-emerald-200 hover:text-white'
-                }`}
+                  }`}
               >
                 {l === 'en' ? 'EN' : l === 'hi' ? 'हि' : 'ଓ'}
               </button>
@@ -598,7 +593,7 @@ export const FarmerModePage = () => {
 
         {/* Dynamic Multi-Crop Time & Weather AI Advice Box */}
         <div className="rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500/50 p-4 sm:p-5 space-y-4 shadow-2xl relative overflow-hidden">
-          
+
           {/* Header Row */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
@@ -642,11 +637,10 @@ export const FarmerModePage = () => {
           {/* Voice Readout Button */}
           <button
             onClick={handleAudioPlay}
-            className={`w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg ${
-              isPlayingAudio
+            className={`w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg ${isPlayingAudio
                 ? 'bg-amber-500 text-slate-950 animate-pulse'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-700/30'
-            }`}
+              }`}
           >
             {isPlayingAudio ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             <span>{isPlayingAudio ? (t.audioPlaying || "Playing Audio...") : (t.audioListen || "Listen to Voice Advice")}</span>
@@ -654,7 +648,7 @@ export const FarmerModePage = () => {
 
           {/* Actionable Structured Breakdown Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            
+
             {/* 1. Recommended Actions (Do's) */}
             <div className="rounded-xl bg-emerald-950/40 border border-emerald-600/40 p-3 space-y-1.5 shadow-inner">
               <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300 uppercase tracking-wider">
@@ -750,11 +744,10 @@ export const FarmerModePage = () => {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
-                  activeCategory === cat
+                className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${activeCategory === cat
                     ? 'bg-emerald-600 text-white shadow-md'
                     : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
-                }`}
+                  }`}
               >
                 {cat}
               </button>
@@ -769,11 +762,10 @@ export const FarmerModePage = () => {
                 <button
                   key={c.id}
                   onClick={() => setSelectedCrop(c.id)}
-                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                    isSelected
+                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${isSelected
                       ? 'bg-emerald-900/90 border-emerald-400 text-white shadow-lg ring-1 ring-emerald-400'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <span className="text-xl">{c.icon}</span>
                   <span className="text-[10px] font-bold truncate w-full leading-tight">
@@ -796,7 +788,7 @@ export const FarmerModePage = () => {
 
         {/* Real-Time Live Web Intelligence Card (Auto-fetched on Crop Selection) */}
         <div className="rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border border-sky-500/50 p-4 sm:p-5 space-y-3.5 shadow-2xl relative overflow-hidden font-sans">
-          
+
           <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-sky-400 animate-pulse" />
@@ -974,11 +966,10 @@ export const FarmerModePage = () => {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
-                    activeCategory === cat
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${activeCategory === cat
                       ? 'bg-emerald-600 text-white shadow-md'
                       : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -996,11 +987,10 @@ export const FarmerModePage = () => {
                       setSelectedCrop(c.id);
                       setShowCropCatalogModal(false);
                     }}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                      isSelected
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${isSelected
                         ? 'bg-emerald-950 border-emerald-400 text-white ring-1 ring-emerald-400 shadow-lg'
                         : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <span className="text-2xl">{c.icon}</span>
                     <div className="min-w-0 flex-1">
@@ -1020,7 +1010,7 @@ export const FarmerModePage = () => {
       {showTavilyModal && (
         <div className="fixed inset-0 z-[600] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl p-5 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto font-sans">
-            
+
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-sky-400 animate-pulse" />
@@ -1071,7 +1061,7 @@ export const FarmerModePage = () => {
             {/* Tavily Results Display */}
             {tavilyResult && (
               <div className="space-y-3 border-t border-slate-800 pt-3">
-                
+
                 {/* AI Answer Summary */}
                 {tavilyResult.answer && (
                   <div className="p-3.5 rounded-2xl bg-gradient-to-b from-sky-950/60 to-slate-950 border border-sky-500/40 space-y-1.5 shadow-inner">

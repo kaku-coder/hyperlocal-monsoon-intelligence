@@ -80,9 +80,9 @@ export const mobileLoginApi = async (phoneNumber) => {
 export const fetchMeApi = async (token) => {
   try {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` 
+        'Authorization': `Bearer ${token}`
       }
     });
     if (res.ok) {
@@ -305,7 +305,7 @@ export const fetchForecast = async (locationId, horizon = 7, panchayat = null) =
       // persist last real-time fetch for offline + fast reload
       try {
         localStorage.setItem('moes_last_forecast', JSON.stringify({ locationId, horizon, panchayat, data, at: Date.now() }));
-      } catch {}
+      } catch { }
       return data;
     }
   } catch (err) {
@@ -357,12 +357,6 @@ export const generateAdvisory = async (cropId, locationId, district, block) => {
   return null;
 };
 
-/**
- * Builds offline fallback ICAR/KVK advisory dataset when live web search is unreachable.
- * @param {string} cropName - Crop title
- * @param {string} district - User district
- * @param {string} block - User block
- */
 export const buildCuratedAgriIntel = (cropName = 'Rice (Paddy)', district = 'Khordha', block = 'Bhubaneswar') => ({
   status: 'success',
   curated: true,

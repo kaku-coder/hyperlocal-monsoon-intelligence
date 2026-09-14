@@ -198,9 +198,9 @@ export const AuthPage = () => {
         const mapLoc = await geocodePincodeForMap(userPin, res.user?.district || district, res.user?.block || block);
         if (mapLoc) setMapLocation(mapLoc);
       }
-      setTimeout(() => setActiveTab('map'), 600);
+setTimeout(() => setActiveTab('risk-map'), 600);
     } else {
-      setErrorMsg(res.message || 'Invalid Mobile Number/Name or Password.');
+      setErrorMsg(res.message || 'Invalid name or password.');
     }
   };
 
@@ -250,7 +250,7 @@ export const AuthPage = () => {
         const mapLoc = await geocodePincodeForMap(userPin, res.user?.district || district, res.user?.block || block);
         if (mapLoc) setMapLocation(mapLoc);
       }
-      setTimeout(() => setActiveTab('map'), 600);
+      setTimeout(() => setActiveTab('risk-map'), 600);
     } else {
       setErrorMsg(res.message || 'Registration failed. Phone may already be registered.');
     }
