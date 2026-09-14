@@ -38,8 +38,9 @@ const cookieOptions = {
 export const sendOtp = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
+    const cleanPhone = (phoneNumber || "").toString().replace(/\D/g, "").slice(-10);
 
-    if (!phoneNumber) {
+    if (!cleanPhone) {
       return res.status(400).json({
         status: "error",
         message: "Please provide a phone number."
@@ -47,7 +48,7 @@ export const sendOtp = async (req, res) => {
     }
 
     const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phoneNumber)) {
+    if (!phoneRegex.test(cleanPhone)) {
       return res.status(400).json({
         status: "error",
         message: "Invalid phone number format. Must be a 10-digit Indian mobile number."
@@ -58,20 +59,20 @@ export const sendOtp = async (req, res) => {
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Delete any old existing OTP for this number
-    await Otp.deleteMany({ phoneNumber });
+    await Otp.deleteMany({ phoneNumber: cleanPhone });
 
     // Save new OTP in MongoDB
     await Otp.create({
-      phoneNumber,
+      phoneNumber: cleanPhone,
       otp: generatedOtp
     });
 
     // Send SMS via Provider (Fast2SMS / Twilio / Simulated)
-    const smsResult = await sendSmsOtp(phoneNumber, generatedOtp);
+    const smsResult = await sendSmsOtp(cleanPhone, generatedOtp);
 
     res.json({
       status: "success",
-      message: `OTP sent successfully to +91 ${phoneNumber}`,
+      message: `OTP sent successfully to +91 ${cleanPhone}`,
       demo_otp: generatedOtp,
       provider: smsResult.provider
     });
@@ -99,7 +100,9 @@ export const verifyOtp = async (req, res) => {
       role = "FARMER"
     } = req.body;
 
-    if (!phoneNumber || !otp) {
+    const cleanPhone = (phoneNumber || "").toString().replace(/\D/g, "").slice(-10);
+
+    if (!cleanPhone || !otp) {
       return res.status(400).json({
         status: "error",
         message: "Please provide both phone number and OTP."
@@ -107,7 +110,7 @@ export const verifyOtp = async (req, res) => {
     }
 
     // Check OTP in MongoDB
-    const otpRecord = await Otp.findOne({ phoneNumber, otp });
+    const otpRecord = await Otp.findOne({ phoneNumber: cleanPhone, otp: otp.toString().trim() });
     if (!otpRecord) {
       return res.status(400).json({
         status: "error",
@@ -116,16 +119,16 @@ export const verifyOtp = async (req, res) => {
     }
 
     // Check if user already exists
-    let user = await User.findOne({ phoneNumber });
+    let user = await User.findOne({ phoneNumber: cleanPhone });
 
     if (!user) {
       // Create new user if not exists
       const defaultPassword = await bcrypt.hash(`OTP_Pass_${Date.now()}`, 10);
       user = await User.create({
-        name,
-        phoneNumber,
+        name: (name || "Farmer").trim(),
+        phoneNumber: cleanPhone,
         password: defaultPassword,
-        pincode,
+        pincode: pincode.toString().trim(),
         district,
         block,
         panchayat,
@@ -134,7 +137,7 @@ export const verifyOtp = async (req, res) => {
     }
 
     // Delete used OTP
-    await Otp.deleteMany({ phoneNumber });
+    await Otp.deleteMany({ phoneNumber: cleanPhone });
 
     // Generate Token
     const token = generateToken(user._id, user.phoneNumber, user.role);
@@ -175,8 +178,9 @@ export const verifyOtp = async (req, res) => {
 export const mobileLogin = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
+    const cleanPhone = (phoneNumber || "").toString().replace(/\D/g, "").slice(-10);
 
-    if (!phoneNumber) {
+    if (!cleanPhone) {
       return res.status(400).json({
         status: "error",
         message: "Please provide a phone number."
@@ -184,20 +188,20 @@ export const mobileLogin = async (req, res) => {
     }
 
     const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phoneNumber)) {
+    if (!phoneRegex.test(cleanPhone)) {
       return res.status(400).json({
         status: "error",
         message: "Invalid phone number. Must be a 10-digit Indian mobile number."
       });
     }
 
-    let user = await User.findOne({ phoneNumber });
+    let user = await User.findOne({ phoneNumber: cleanPhone });
 
     if (!user) {
       const defaultPassword = await bcrypt.hash(`Mobile_${Date.now()}`, 10);
       user = await User.create({
         name: "Farmer",
-        phoneNumber,
+        phoneNumber: cleanPhone,
         password: defaultPassword,
         pincode: "754212",
         district: "Kendrapara",
@@ -254,7 +258,12 @@ export const registerUser = async (req, res) => {
       primaryCrop = "rice"
     } = req.body;
 
-    if (!name || !phoneNumber || !password || !pincode) {
+    const cleanName = (name || "").toString().trim();
+    const cleanPhone = (phoneNumber || "").toString().replace(/\D/g, "").slice(-10);
+    const cleanPassword = (password || "").toString().trim();
+    const cleanPincode = (pincode || "").toString().trim();
+
+    if (!cleanName || !cleanPhone || !cleanPassword || !cleanPincode) {
       return res.status(400).json({
         status: "error",
         message: "Please fill in all required fields: name, phoneNumber, password, pincode."
@@ -262,7 +271,7 @@ export const registerUser = async (req, res) => {
     }
 
     const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phoneNumber)) {
+    if (!phoneRegex.test(cleanPhone)) {
       return res.status(400).json({
         status: "error",
         message: "Invalid phone number format. Must be a 10-digit Indian mobile number."
@@ -270,14 +279,14 @@ export const registerUser = async (req, res) => {
     }
 
     const pinRegex = /^\d{6}$/;
-    if (!pinRegex.test(pincode)) {
+    if (!pinRegex.test(cleanPincode)) {
       return res.status(400).json({
         status: "error",
         message: "Invalid Pincode format. Must be a 6-digit number."
       });
     }
 
-    const existingUser = await User.findOne({ phoneNumber });
+    const existingUser = await User.findOne({ phoneNumber: cleanPhone });
     if (existingUser) {
       return res.status(400).json({
         status: "error",
@@ -286,13 +295,13 @@ export const registerUser = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(cleanPassword, salt);
 
     const user = await User.create({
-      name,
-      phoneNumber,
+      name: cleanName,
+      phoneNumber: cleanPhone,
       password: hashedPassword,
-      pincode,
+      pincode: cleanPincode,
       district,
       block,
       panchayat,
@@ -338,8 +347,9 @@ export const loginUser = async (req, res) => {
     const { phoneNumber, name, password } = req.body;
     const rawId = (phoneNumber || name || "").toString().trim();
     const cleanPhone = rawId.replace(/\D/g, "").slice(-10);
+    const cleanPassword = (password || "").toString().trim();
 
-    if (!rawId || !password) {
+    if (!rawId || !cleanPassword) {
       return res.status(400).json({
         status: "error",
         message: "Please provide your Mobile Number (or Name) and Password."
@@ -353,6 +363,9 @@ export const loginUser = async (req, res) => {
     }
     queryConds.push({ phoneNumber: rawId });
     queryConds.push({ name: new RegExp(`^${rawId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i") });
+    if (rawId.length >= 2 && !/^\d+$/.test(rawId)) {
+      queryConds.push({ name: new RegExp(rawId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i") });
+    }
 
     const user = await User.findOne({ $or: queryConds });
     if (!user) {
@@ -362,8 +375,10 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    const isFallbackMatch = (password === user.phoneNumber) || (password === `Farmer_${user.phoneNumber}`);
+    const isMatch = await bcrypt.compare(cleanPassword, user.password);
+    const isFallbackMatch = (cleanPassword === user.phoneNumber) || 
+                            (cleanPassword === `Farmer_${user.phoneNumber}`) ||
+                            (cleanPassword.toLowerCase() === user.name.toLowerCase());
 
     if (!isMatch && !isFallbackMatch) {
       return res.status(401).json({

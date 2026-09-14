@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: process.env.VITE_PROXY_TARGET || 'https://hyperlocal-monsoon-intelligence.onrender.com',
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:5005',
         changeOrigin: true,
         secure: false
       }

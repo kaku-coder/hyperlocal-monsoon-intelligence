@@ -63,14 +63,16 @@ export const AuthModal = ({ isOpen, onClose }) => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    const loginId = phoneNumber || name;
-    if (!loginId || !password) {
-      setErrorMsg('Please enter your Mobile Number or Name and Password');
+    const loginId = (phoneNumber || name || '').trim();
+    const cleanPassword = password.trim();
+
+    if (!loginId || !cleanPassword) {
+      setErrorMsg('Please enter your Mobile Number (or Name) and Password');
       return;
     }
 
     setLoading(true);
-    const res = await loginUserApi(loginId, password);
+    const res = await loginUserApi(loginId, cleanPassword);
     setLoading(false);
 
     if (res.status === 'success' && res.token) {
@@ -94,22 +96,28 @@ export const AuthModal = ({ isOpen, onClose }) => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!name || !phoneNumber || !password || !pincode) {
+    const cleanName = name.trim();
+    const cleanPhone = phoneNumber.trim();
+    const cleanPassword = password.trim();
+    const cleanPin = pincode.trim();
+
+    if (!cleanName || !cleanPhone || !cleanPassword || !cleanPin) {
       setErrorMsg('Please fill in Name, Phone Number, Password, and Pincode.');
       return;
     }
 
-    if (phoneNumber.length < 10) {
+    const digitsOnly = cleanPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) {
       setErrorMsg('Phone Number must be a valid 10-digit Indian mobile number');
       return;
     }
 
     setLoading(true);
     const res = await registerUserApi({
-      name,
-      phoneNumber,
-      password,
-      pincode,
+      name: cleanName,
+      phoneNumber: cleanPhone,
+      password: cleanPassword,
+      pincode: cleanPin,
       district,
       block,
       role
@@ -137,18 +145,19 @@ export const AuthModal = ({ isOpen, onClose }) => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!phoneNumber || phoneNumber.length < 10) {
+    const cleanPhone = phoneNumber.trim().replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
       setErrorMsg('Please enter a valid 10-digit Mobile Number');
       return;
     }
 
     setLoading(true);
-    const res = await sendOtpApi(phoneNumber);
+    const res = await sendOtpApi(cleanPhone);
     setLoading(false);
 
     if (res.status === 'success') {
       setOtpStep(2);
-      setSuccessMsg(`OTP generated for +91 ${phoneNumber}`);
+      setSuccessMsg(`OTP generated for +91 ${cleanPhone}`);
       if (res.demo_otp) {
         setGeneratedDemoOtp(res.demo_otp);
       }
@@ -170,10 +179,10 @@ export const AuthModal = ({ isOpen, onClose }) => {
 
     setLoading(true);
     const res = await verifyOtpApi({
-      phoneNumber,
-      otp: otpCode,
-      name: name || 'Farmer',
-      pincode: pincode || '754212',
+      phoneNumber: phoneNumber.trim(),
+      otp: otpCode.trim(),
+      name: name.trim() || 'Farmer',
+      pincode: pincode.trim() || '754212',
       district,
       block
     });
@@ -284,17 +293,18 @@ export const AuthModal = ({ isOpen, onClose }) => {
           <form onSubmit={handlePasswordLogin} className="space-y-3.5">
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                Mobile Phone Number / ମୋବାଇଲ ନମ୍ବର:
+                Mobile Phone Number or Name / ମୋବାଇଲ ନମ୍ବର କିମ୍ବା ନାମ:
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">+91</span>
                 <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="9876543210"
-                  maxLength={10}
-                  className="w-full pl-12 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  type="text"
+                  value={phoneNumber || name}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    setName(e.target.value);
+                  }}
+                  placeholder="e.g. 9876543210 or Ramesh"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>

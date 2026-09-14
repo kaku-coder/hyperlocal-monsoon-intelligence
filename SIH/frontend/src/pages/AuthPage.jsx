@@ -173,13 +173,16 @@ export const AuthPage = () => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!name || !password) {
-      setErrorMsg('Please enter your Name and Password');
+    const loginId = (name || '').trim();
+    const cleanPassword = (password || '').trim();
+
+    if (!loginId || !cleanPassword) {
+      setErrorMsg('Please enter your Mobile Number or Name and Password');
       return;
     }
 
     setLoading(true);
-    const res = await loginUserApi(name, password);
+    const res = await loginUserApi(loginId, cleanPassword);
     setLoading(false);
 
     if (res.status === 'success' && res.token) {
@@ -197,7 +200,7 @@ export const AuthPage = () => {
       }
       setTimeout(() => setActiveTab('map'), 600);
     } else {
-      setErrorMsg(res.message || 'Invalid name or password.');
+      setErrorMsg(res.message || 'Invalid Mobile Number/Name or Password.');
     }
   };
 
@@ -206,24 +209,28 @@ export const AuthPage = () => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!name || !phoneNumber) {
+    const cleanName = name.trim();
+    const cleanPhone = phoneNumber.trim();
+    const cleanPassword = password.trim() || cleanPhone;
+    const cleanPin = pincode.trim() || '754212';
+
+    if (!cleanName || !cleanPhone) {
       setErrorMsg('Please fill in Name and Mobile Number.');
       return;
     }
 
-    if (phoneNumber.trim().length < 10) {
+    const digitsOnly = cleanPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) {
       setErrorMsg('Mobile Number must be a valid 10-digit number.');
       return;
     }
 
-    const passwordToUse = password.trim() || phoneNumber.trim();
-
     setLoading(true);
     const res = await registerUserApi({
-      name: name.trim(),
-      phoneNumber: phoneNumber.trim(),
-      password: passwordToUse,
-      pincode: pincode || '754212',
+      name: cleanName,
+      phoneNumber: cleanPhone,
+      password: cleanPassword,
+      pincode: cleanPin,
       district: district || 'Kendrapara',
       block: block || 'Rajkanika',
       role: 'FARMER'
