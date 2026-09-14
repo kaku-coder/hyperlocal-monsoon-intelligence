@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { translations } from '../utils/localization';
 import { playTextToSpeech, stopTextToSpeech } from '../utils/tts';
-import { checkWeatherAlert, fetchTavilyAgriSearch } from '../services/api';
+import { checkWeatherAlert, fetchTavilyAgriSearch, buildCuratedAgriIntel } from '../services/api';
 import { 
   Sprout, 
   CloudRain, 
@@ -145,12 +145,15 @@ export const FarmerModePage = () => {
           if (res && res.status === 'success') {
             setTavilyResult(res);
           } else {
-            setTavilyError(res?.message || 'Unable to fetch real-time web search data.');
+            // Backend is unreachable or errored: show curated offline advisory
+            // instead of the red "Unable to fetch" error box.
+            setTavilyResult(buildCuratedAgriIntel(activeMeta.name, cleanDistrict, selectedBlock));
           }
           setTavilyLoading(false);
         }
       } catch (err) {
         if (isMounted) {
+          setTavilyResult(buildCuratedAgriIntel(activeMeta.name, cleanDistrict, selectedBlock));
           setTavilyLoading(false);
         }
       }
@@ -459,7 +462,8 @@ export const FarmerModePage = () => {
     if (res && res.status === 'success') {
       setTavilyResult(res);
     } else {
-      setTavilyError(res?.message || 'Failed to fetch real-time web search results.');
+      // Never leave the modal empty/errored: fall back to curated advisory.
+      setTavilyResult(buildCuratedAgriIntel(activeMeta.name, cleanDistrict, selectedBlock));
     }
     setTavilyLoading(false);
   };

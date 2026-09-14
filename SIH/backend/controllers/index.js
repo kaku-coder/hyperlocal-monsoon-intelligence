@@ -536,12 +536,26 @@ const getAutoLocationByIP = async (req, res) => {
   }
 };
 
+const buildCuratedIntel = (cropName, district, block, searchQuery) => ({
+  status: "success",
+  curated: true,
+  provider: "Curated ICAR/KVK Advisory (offline fallback)",
+  query: searchQuery,
+  answer: `Curated ICAR/KVK advisory for ${cropName || 'Kharif crops'} (${district || 'Odisha'}, ${block || ''}): maintain field bunds for rainwater harvesting and apply basal fertilizer only after good soil moisture. Check eNAM / Agmarknet for the latest mandi prices and contact your nearest KVK (${district || 'Odisha'}) for variety-specific guidance. Live web search is temporarily unavailable, so this offline advisory is shown.`,
+  results: [
+    { title: "ICAR — Crop Advisories", url: "https://icar.gov.in/", snippet: "Official ICAR crop production advisories, contingency plans and package of practices.", source: "ICAR" },
+    { title: "KVK Knowledge Network", url: "https://kvk.icar.gov.in/", snippet: "Find your nearest Krishi Vigyan Kendra (KVK) for district-specific guidance.", source: "KVK" },
+    { title: "eNAM — Mandi Prices", url: "https://enam.gov.in/", snippet: "Live mandi arrivals and modal prices for paddy and other commodities.", source: "eNAM" },
+    { title: "Agmarknet — Price Search", url: "https://agmarknet.gov.in/", snippet: "Commodity-wise daily mandi price reports from across Odisha and India.", source: "Agmarknet" }
+  ]
+});
+
 const postTavilyAgriSearch = async (req, res) => {
-  const { cropName, district, block, query } = req.body || {};
+  const { cropName, district, block, query, tavilyKey: clientKey } = req.body || {};
   const searchQuery = query || `realtime ICAR KVK agricultural advisory weather impact mandi price for ${cropName || 'Kharif crops'} in ${district || 'Odisha'} ${block || ''} 2026`;
 
-  const serpKey = (process.env.SERP_API_KEY || process.env.SERPAPI_KEY || "376389be72789b9028d88ff7e2975a436d78bb2fab9d4816ff390372ecbc84c7").trim();
-  const tavilyKey = (process.env.TAVILY_API_KEY || "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").trim();
+  const serpKey = (process.env.SERP_API_KEY || process.env.SERPAPI_KEY || clientKey || "").trim();
+  const tavilyKey = (process.env.TAVILY_API_KEY || "").trim();
 
   // 1. Try SerpApi (Google Live Real-Time Search)
   if (serpKey) {
@@ -614,15 +628,16 @@ const postTavilyAgriSearch = async (req, res) => {
           }))
         });
       }
+      const detail = ((data && (data.detail || data.message || data.error)) || rawText || "").toString().slice(0, 300);
+      console.warn(`Tavily fallback failed (${response.status}): ${detail}`);
     } catch (err) {
       console.error("Tavily Search Error:", err.message);
     }
   }
 
-  return res.status(502).json({
-    status: "error",
-    message: "Live web search unavailable right now. Showing curated ICAR/KVK advisory."
-  });
+  // 3. Guaranteed fallback: NEVER show the red "Unable to fetch" error box.
+  // Return curated ICAR/KVK advisory as a success payload so the card always renders.
+  return res.json(buildCuratedIntel(cropName, district, block, searchQuery));
 };
 
 export {
