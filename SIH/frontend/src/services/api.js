@@ -236,11 +236,26 @@ const normalizeDistrictKey = (district) => {
 };
 
 export const getLocalFallbackBlocks = (district) => {
+  if (!district) return LOCAL_ODISHA_DB['Khordha'];
   const normKey = normalizeDistrictKey(district);
   if (LOCAL_ODISHA_DB[normKey]) {
     return LOCAL_ODISHA_DB[normKey];
   }
-  return LOCAL_ODISHA_DB['Balasore'];
+  const cleanD = district.trim();
+  return [
+    {
+      id: `gen-${cleanD.toLowerCase().replace(/\s+/g, '-')}-sadar`,
+      district: cleanD,
+      block: `${cleanD} Sadar`,
+      panchayats: [`${cleanD} Main`, `North ${cleanD}`, `South ${cleanD}`, `East ${cleanD}`, `West ${cleanD}`]
+    },
+    {
+      id: `gen-${cleanD.toLowerCase().replace(/\s+/g, '-')}-central`,
+      district: cleanD,
+      block: `${cleanD} Central`,
+      panchayats: [`Market Yard`, `Civil Lines`, `Township`, `Station Area`]
+    }
+  ];
 };
 
 export const fetchBlocks = async (district) => {

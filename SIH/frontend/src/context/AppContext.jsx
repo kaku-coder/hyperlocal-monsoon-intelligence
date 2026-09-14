@@ -147,41 +147,118 @@ export const AppProvider = ({ children }) => {
     loadDistricts();
   }, []);
 
+  // Real-Time GPS Geolocation Engine & IP Auto-Location Fallback
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('');
+
+  const detectRealTimeLocation = async () => {
+    setDetectingLocation(true);
+    setLocationStatus('Requesting GPS location...');
+
+    if (!navigator.geolocation) {
+      setLocationStatus('GPS not supported. Using IP location fallback...');
+      const ipLoc = await fetchAutoLocationApi();
+      if (ipLoc && ipLoc.district) {
+        changeLocation(ipLoc.district, ipLoc.block, ipLoc.locationId, ipLoc.panchayat);
+        setLocationStatus(`📍 Real Location: ${ipLoc.block || ipLoc.district}`);
+        setDetectingLocation(false);
+        return true;
+      }
+      setDetectingLocation(false);
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const { latitude, longitude } = pos.coords;
+            setLocationStatus('Reverse geocoding position...');
+
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`);
+            const data = await res.json();
+
+            if (data && data.address) {
+              const addr = data.address;
+              const state = addr.state || 'Odisha';
+              const distRaw = addr.state_district || addr.district || addr.county || addr.city || 'Khordha';
+              const distClean = distRaw.replace(/ district/i, '').trim();
+              const blockRaw = addr.suburb || addr.town || addr.village || addr.city_district || addr.county || `${distClean} Sadar`;
+              const gpRaw = addr.village || addr.suburb || addr.neighbourhood || addr.quarter || 'Main';
+
+              setSelectedState(state);
+              setMapLocationState({ lat: latitude, lon: longitude, label: `${gpRaw}, ${distClean}, ${state}` });
+              changeLocation(distClean, blockRaw, null, gpRaw);
+              setLocationStatus(`📍 GPS: ${gpRaw}, ${distClean}`);
+              setDetectingLocation(false);
+              resolve(true);
+              return;
+            }
+          } catch (err) {
+            console.warn("Reverse geocoding error", err);
+          }
+
+          // Fallback to IP auto location if reverse geocoding failed
+          const ipLoc = await fetchAutoLocationApi();
+          if (ipLoc && ipLoc.district) {
+            changeLocation(ipLoc.district, ipLoc.block, ipLoc.locationId, ipLoc.panchayat);
+            setLocationStatus(`📍 Real Location: ${ipLoc.block || ipLoc.district}`);
+          }
+          setDetectingLocation(false);
+          resolve(false);
+        },
+        async (err) => {
+          console.warn("GPS error", err);
+          setLocationStatus('GPS permission denied. Trying IP location...');
+          const ipLoc = await fetchAutoLocationApi();
+          if (ipLoc && ipLoc.district) {
+            changeLocation(ipLoc.district, ipLoc.block, ipLoc.locationId, ipLoc.panchayat);
+            setLocationStatus(`📍 Real Location: ${ipLoc.block || ipLoc.district}`);
+          } else {
+            setLocationStatus('GPS unavailable.');
+          }
+          setDetectingLocation(false);
+          resolve(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+  };
+
   // Load blocks whenever district changes — always show ALL blocks for district
   useEffect(() => {
     const loadBlocks = async () => {
       if (!selectedDistrict) return;
       const blist = await fetchBlocks(selectedDistrict);
-      setBlocks(blist || []);
-      if (blist && blist.length > 0) {
-        const current = blist.find(b => b.block.toLowerCase() === selectedBlock?.toLowerCase());
-        if (!current) {
-          const firstB = blist[0];
-          setSelectedBlock(firstB.block);
-          localStorage.setItem('moes_selected_block', firstB.block);
-          const firstGP = firstB.panchayats?.[0] || '';
-          if (firstGP) {
-            setSelectedPanchayatState(firstGP);
-            localStorage.setItem('moes_selected_panchayat', firstGP);
-          }
-          if (firstB.id) {
-            setSelectedLocationId(firstB.id);
-            localStorage.setItem('moes_selected_locationId', firstB.id);
-          }
-          persistLocation(selectedDistrict, firstB.block, firstGP, firstB.id);
-          locationSocket.changeLocation({ district: selectedDistrict, block: firstB.block, panchayat: firstGP, locationId: firstB.id });
-        } else {
-          // district same but ensure locationId + panchayat are valid for current block
-          if (current.id && current.id !== selectedLocationId) {
-            setSelectedLocationId(current.id);
-            localStorage.setItem('moes_selected_locationId', current.id);
-          }
-          const gps = current.panchayats || [];
-          if (gps.length > 0 && !gps.includes(selectedPanchayat)) {
-            setSelectedPanchayatState(gps[0]);
-            localStorage.setItem('moes_selected_panchayat', gps[0]);
-            persistLocation(selectedDistrict, current.block, gps[0], current.id);
-          }
+      const finalBlocks = (blist && blist.length > 0) ? blist : getLocalFallbackBlocks(selectedDistrict);
+      setBlocks(finalBlocks);
+
+      // Verify selectedBlock belongs to this district's block list
+      const current = finalBlocks.find(b => b.block.toLowerCase() === selectedBlock?.toLowerCase());
+      if (!current) {
+        // Strict Sync: Reset to first block of selected district!
+        const firstB = finalBlocks[0];
+        setSelectedBlock(firstB.block);
+        localStorage.setItem('moes_selected_block', firstB.block);
+        const firstGP = firstB.panchayats?.[0] || 'Sadar';
+        setSelectedPanchayatState(firstGP);
+        localStorage.setItem('moes_selected_panchayat', firstGP);
+        if (firstB.id) {
+          setSelectedLocationId(firstB.id);
+          localStorage.setItem('moes_selected_locationId', firstB.id);
+        }
+        persistLocation(selectedDistrict, firstB.block, firstGP, firstB.id || `loc-${selectedDistrict}`);
+        locationSocket.changeLocation({ district: selectedDistrict, block: firstB.block, panchayat: firstGP, locationId: firstB.id });
+      } else {
+        if (current.id && current.id !== selectedLocationId) {
+          setSelectedLocationId(current.id);
+          localStorage.setItem('moes_selected_locationId', current.id);
+        }
+        const gps = current.panchayats || [];
+        if (gps.length > 0 && !gps.includes(selectedPanchayat)) {
+          setSelectedPanchayatState(gps[0]);
+          localStorage.setItem('moes_selected_panchayat', gps[0]);
+          persistLocation(selectedDistrict, current.block, gps[0], current.id);
         }
       }
     };
@@ -225,46 +302,41 @@ export const AppProvider = ({ children }) => {
     const d = district || selectedDistrict;
     const isNewDistrict = d && d.toLowerCase() !== (selectedDistrict || '').toLowerCase();
 
-    // Use fresh block pool if district changed to avoid matching against stale blocks
-    const pool = (isNewDistrict || !blocks || blocks.length === 0)
-      ? getLocalFallbackBlocks(d)
-      : blocks;
+    // Use fresh block pool for district
+    const pool = getLocalFallbackBlocks(d);
     
     if (isNewDistrict) {
       setBlocks(pool);
     }
 
     let b = block;
-    let id = locId;
-    let p = panchayat;
+    let match = pool.find(x => x.block.toLowerCase() === (b || '').toLowerCase());
+    // If district changed and provided block is invalid for new district, default to pool[0]
+    if (!match || (isNewDistrict && (!block || !pool.some(x => x.block.toLowerCase() === block.toLowerCase())))) {
+      match = pool[0];
+    }
 
-    const match = pool.find(x => x.block.toLowerCase() === (b || '').toLowerCase()) || pool[0];
     if (match) {
       b = match.block;
-      if (!id) id = match.id;
+      let id = locId || match.id || `loc-${d.toLowerCase()}-${b.toLowerCase()}`;
       const gps = match.panchayats || [];
+      let p = panchayat;
       if (!p || (gps.length > 0 && !gps.includes(p))) {
-        p = gps[0] || p;
+        p = gps[0] || 'Sadar';
       }
-    }
 
-    setSelectedDistrict(d);
-    localStorage.setItem('moes_selected_district', d);
-    if (b) {
+      setSelectedDistrict(d);
+      localStorage.setItem('moes_selected_district', d);
       setSelectedBlock(b);
       localStorage.setItem('moes_selected_block', b);
-    }
-    if (id) {
       setSelectedLocationId(id);
       localStorage.setItem('moes_selected_locationId', id);
-    }
-    if (p) {
       setSelectedPanchayatState(p);
       localStorage.setItem('moes_selected_panchayat', p);
-    }
 
-    persistLocation(d, b, p, id);
-    locationSocket.changeLocation({ district: d, block: b, panchayat: p, locationId: id });
+      persistLocation(d, b, p, id);
+      locationSocket.changeLocation({ district: d, block: b, panchayat: p, locationId: id });
+    }
   };
 
   // Centralized Persistent Notification Engine
@@ -453,6 +525,9 @@ export const AppProvider = ({ children }) => {
         selectedLocationId,
         setSelectedLocationId,
         changeLocation,
+        detectRealTimeLocation,
+        detectingLocation,
+        locationStatus,
         forecastHorizon,
         setForecastHorizon,
         forecastData,

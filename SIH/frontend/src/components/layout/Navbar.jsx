@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { getLocalFallbackBlocks } from '../../services/api';
 import {
   CloudRain,
   MapPin,
@@ -13,7 +14,8 @@ import {
   LogIn,
   Search,
   Menu,
-  X
+  X,
+  Navigation
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -33,6 +35,9 @@ export const Navbar = () => {
     selectedPanchayat,
     setSelectedPanchayat,
     changeLocation,
+    detectRealTimeLocation,
+    detectingLocation,
+    locationStatus,
     loadingForecast,
     isMobileSidebarOpen,
     setIsMobileSidebarOpen,
@@ -49,9 +54,9 @@ export const Navbar = () => {
 
   const handleDistrictChange = (e) => {
     const newDistrict = e.target.value;
-    // changeLocation resolves first block + first GP + locationId automatically
-    // and triggers real-time forecast fetch + localStorage persist + socket broadcast
-    changeLocation(newDistrict, null, null, null);
+    const fallbackBlocks = getLocalFallbackBlocks(newDistrict);
+    const firstB = fallbackBlocks?.[0];
+    changeLocation(newDistrict, firstB?.block, firstB?.id, firstB?.panchayats?.[0]);
   };
 
   const handleBlockChange = (e) => {
@@ -201,6 +206,18 @@ export const Navbar = () => {
           {navSearching ? '...' : 'Go'}
         </button>
       </form>
+
+      {/* Real-Time GPS Auto-Detect Button */}
+      <button
+        type="button"
+        onClick={detectRealTimeLocation}
+        disabled={detectingLocation}
+        title={locationStatus || "Detect Real-Time GPS / IP Location"}
+        className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black px-2 py-1 rounded-lg text-[10px] shadow transition-all cursor-pointer disabled:opacity-50 shrink-0 border border-emerald-400/40"
+      >
+        <Navigation className={`h-3 w-3 ${detectingLocation ? 'animate-spin text-amber-300' : 'text-emerald-100'}`} />
+        <span>{detectingLocation ? 'Locating...' : '📍 Live GPS'}</span>
+      </button>
 
       {loadingForecast && <span className="text-[10px] text-cyan-400 animate-pulse ml-1 shrink-0">● live</span>}
     </div>
