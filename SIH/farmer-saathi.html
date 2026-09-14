@@ -494,6 +494,7 @@ function handleAudioPlay() {
 
 /* ============ API HELPERS ============ */
 async function checkWeatherAlert() {
+  if (!API_BASE) return null;
   try {
     const res = await fetch(`${API_BASE}/weather/alerts/check`, {
       method: 'POST',
@@ -506,6 +507,7 @@ async function checkWeatherAlert() {
 }
 
 async function fetchTavilyAgriSearch({ cropName, district, block, query, tavilyKey }) {
+  if (!API_BASE) return null;
   try {
     const res = await fetch(`${API_BASE}/agri/tavily-search`, {
       method: 'POST',
@@ -967,6 +969,41 @@ function selectQuickCrop(id) {
   renderMain();
 }
 
+function statusPill() {
+  if (state.apiStatus === 'live') {
+    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border bg-emerald-950/60 border-emerald-500/50 text-emerald-300 max-w-[68%]">
+      <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+      <span class="truncate">● LIVE — ${escapeHtml(state.apiSource)}</span></span>`;
+  }
+  if (state.apiStatus === 'offline') {
+    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border bg-amber-950/60 border-amber-500/50 text-amber-300">
+      <span class="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0"></span>
+      ⚠ DEMO DATA — backend not reachable</span>`;
+  }
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border bg-slate-800 border-slate-700 text-slate-300">
+    <span class="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse shrink-0"></span>
+    ● Checking live data…</span>`;
+}
+
+async function retryLiveData() {
+  state.apiStatus = 'checking';
+  state.nowcastData = null;
+  state.nowcastError = '';
+  renderMain();
+  const base = await probeApiBase();
+  if (base) {
+    API_BASE = base;
+    state.apiStatus = 'live';
+    state.apiSource = base;
+    await loadForecast();
+  } else {
+    API_BASE = null;
+    state.apiStatus = 'offline';
+    state.apiSource = '';
+  }
+  renderMain();
+}
+
 function nowcastBody() {
   if (state.checkingWeather) {
     return `<div class="flex items-center justify-center gap-2 py-4 text-slate-400 text-xs font-semibold">
@@ -1040,7 +1077,15 @@ function showScannerNote() {
 
 /* ============ INIT ============ */
 (async function init() {
-  await loadForecast();
+  const base = await probeApiBase();
+  if (base) {
+    API_BASE = base;
+    state.apiStatus = 'live';
+    state.apiSource = base;
+    await loadForecast();
+  } else {
+    state.apiStatus = 'offline';
+  }
   renderMain();
 })();
 </script>

@@ -99,9 +99,7 @@ export const FarmerModePage = () => {
   const [showCropCatalogModal, setShowCropCatalogModal] = useState(false);
 
   // Tavily Real-Time AI Search State
-  const DEFAULT_TAVILY_KEY = import.meta.env.VITE_TAVILY_API_KEY || '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';
   const [showTavilyModal, setShowTavilyModal] = useState(false);
-  const [userTavilyKey, setUserTavilyKey] = useState(() => localStorage.getItem('moes_tavily_key') || DEFAULT_TAVILY_KEY);
   const [tavilyQuery, setTavilyQuery] = useState('');
   const [tavilyLoading, setTavilyLoading] = useState(false);
   const [tavilyResult, setTavilyResult] = useState(null);
@@ -129,8 +127,6 @@ export const FarmerModePage = () => {
     let isMounted = true;
     const fetchLiveCropData = async () => {
       const activeMeta = CROP_DATABASE.find(c => c.id === (selectedCrop || 'rice')) || CROP_DATABASE[0];
-      const apiKeyToUse = userTavilyKey || DEFAULT_TAVILY_KEY;
-      if (!apiKeyToUse) return;
 
       setTavilyLoading(true);
       setTavilyError('');
@@ -142,15 +138,14 @@ export const FarmerModePage = () => {
           cropName: activeMeta.name,
           district: cleanDistrict,
           block: selectedBlock,
-          query: autoQuery,
-          tavilyKey: apiKeyToUse
+          query: autoQuery
         });
 
         if (isMounted) {
           if (res && res.status === 'success') {
             setTavilyResult(res);
           } else {
-            setTavilyError(res?.message || 'Unable to fetch real-time Tavily web search data.');
+            setTavilyError(res?.message || 'Unable to fetch real-time web search data.');
           }
           setTavilyLoading(false);
         }
@@ -166,7 +161,7 @@ export const FarmerModePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedCrop, selectedBlock, cleanDistrict, userTavilyKey]);
+  }, [selectedCrop, selectedBlock, cleanDistrict]);
 
   const filteredCrops = CROP_DATABASE.filter(c => {
     const matchesCategory = activeCategory === 'All' || c.category === activeCategory;
@@ -448,13 +443,8 @@ export const FarmerModePage = () => {
 
   const handleTavilySearch = async (e) => {
     e?.preventDefault();
-    if (!userTavilyKey.trim()) {
-      setTavilyError(lang === 'hi' ? 'कृपया Tavily API Key दर्ज करें' : lang === 'or' ? 'ଦୟାକରି Tavily API Key ପ୍ରବେଶ କରନ୍ତୁ' : 'Please enter your Tavily API Key');
-      return;
-    }
     setTavilyLoading(true);
     setTavilyError('');
-    localStorage.setItem('moes_tavily_key', userTavilyKey.trim());
 
     const activeMeta = CROP_DATABASE.find(c => c.id === selectedCrop) || CROP_DATABASE[0];
     const queryToUse = tavilyQuery.trim() || `realtime ICAR KVK agricultural advisory weather impact mandi price for ${activeMeta.name} in ${cleanDistrict} ${selectedBlock} 2026`;
@@ -463,14 +453,13 @@ export const FarmerModePage = () => {
       cropName: activeMeta.name,
       district: cleanDistrict,
       block: selectedBlock,
-      query: queryToUse,
-      tavilyKey: userTavilyKey.trim()
+      query: queryToUse
     });
 
     if (res && res.status === 'success') {
       setTavilyResult(res);
     } else {
-      setTavilyError(res?.message || 'Failed to fetch Tavily real-time web search results.');
+      setTavilyError(res?.message || 'Failed to fetch real-time web search results.');
     }
     setTavilyLoading(false);
   };
@@ -1003,24 +992,6 @@ export const FarmerModePage = () => {
               >
                 <X className="h-5 w-5" />
               </button>
-            </div>
-
-            {/* API Key Input Row */}
-            <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl space-y-2">
-              <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                <Key className="h-3.5 w-3.5 text-amber-400" />
-                <span>Tavily API Key:</span>
-              </label>
-              <input
-                type="password"
-                value={userTavilyKey}
-                onChange={(e) => setUserTavilyKey(e.target.value)}
-                placeholder="Paste your Tavily API Key (e.g. tvly-dev-xxxx)..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 font-mono"
-              />
-              <div className="text-[9px] text-slate-500">
-                Key will be saved locally in your browser. Get a key from tavily.com
-              </div>
             </div>
 
             {/* Custom Query Search Form */}

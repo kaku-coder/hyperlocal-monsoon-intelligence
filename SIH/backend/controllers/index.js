@@ -538,12 +538,12 @@ const getAutoLocationByIP = async (req, res) => {
 
 const postTavilyAgriSearch = async (req, res) => {
   const { cropName, district, block, query, tavilyKey: clientKey } = req.body;
-  const apiKey = clientKey || process.env.TAVILY_API_KEY;
+  const apiKey = process.env.TAVILY_API_KEY || clientKey || "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";
 
   if (!apiKey) {
     return res.status(400).json({ 
       status: "error", 
-      message: "Tavily API key is missing. Please provide a Tavily API key." 
+      message: "Tavily API key is missing on backend server." 
     });
   }
 
