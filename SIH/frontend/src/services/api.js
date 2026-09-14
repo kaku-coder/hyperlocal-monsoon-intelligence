@@ -357,6 +357,12 @@ export const generateAdvisory = async (cropId, locationId, district, block) => {
   return null;
 };
 
+/**
+ * Builds offline fallback ICAR/KVK advisory dataset when live web search is unreachable.
+ * @param {string} cropName - Crop title
+ * @param {string} district - User district
+ * @param {string} block - User block
+ */
 export const buildCuratedAgriIntel = (cropName = 'Rice (Paddy)', district = 'Khordha', block = 'Bhubaneswar') => ({
   status: 'success',
   curated: true,
