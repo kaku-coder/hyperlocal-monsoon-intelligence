@@ -221,7 +221,7 @@ export const RiskMapPage = () => {
 
   // Sync function that accurately geocodes District/Block/Panchayat without returning hardcoded Bhubaneswar
   const syncMapLocation = useCallback(async (targetDistrict, targetBlock, targetPanchayat) => {
-    if (isPincodeSearchRef.current && (Date.now() - isPincodeSearchRef.current < 4000)) {
+    if (isPincodeSearchRef.current && (Date.now() - isPincodeSearchRef.current < 10000)) {
       return;
     }
 
@@ -234,12 +234,14 @@ export const RiskMapPage = () => {
 
     let finalLat = null;
     let finalLon = null;
+    let countrySubtitle = ODISHA_DISTRICT_COORDS[d] ? `${d}, Odisha` : `${d}, India`;
 
     try {
       const searchTerms = [
         p ? `${p}, ${d}, Odisha, India` : null,
         `${b}, ${d}, Odisha, India`,
-        `${d}, Odisha, India`
+        `${b}, ${d}, India`,
+        `${d}, India`
       ].filter(Boolean);
 
       for (const query of searchTerms) {
@@ -247,8 +249,12 @@ export const RiskMapPage = () => {
           const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`);
           const data = await res.json();
           if (data && data.length) {
-            finalLat = parseFloat(data[0].lat);
-            finalLon = parseFloat(data[0].lon);
+            const parsed = parseLocationFromNominatim(data[0], b);
+            if (parsed) {
+              finalLat = parsed.lat;
+              finalLon = parsed.lon;
+              countrySubtitle = parsed.countrySubtitle;
+            }
             break;
           }
         } catch (e) {
@@ -258,11 +264,14 @@ export const RiskMapPage = () => {
 
       if (!finalLat || !finalLon) {
         const districtLookup = ODISHA_DISTRICT_COORDS[d] || ODISHA_DISTRICT_COORDS[b] || ODISHA_DISTRICT_COORDS['Khordha'];
-        finalLat = districtLookup.lat;
-        finalLon = districtLookup.lon;
+        finalLat = districtLookup ? districtLookup.lat : 20.2961;
+        finalLon = districtLookup ? districtLookup.lon : 85.8245;
+        if (!ODISHA_DISTRICT_COORDS[d]) {
+          countrySubtitle = `${d}, India`;
+        }
       }
 
-      setCoords({ lat: finalLat, lon: finalLon, name: displayName, country: `${d}, Odisha` });
+      setCoords({ lat: finalLat, lon: finalLon, name: displayName, country: countrySubtitle });
       await fetchWeather(finalLat, finalLon);
 
       // Generate surrounding markers around target location
@@ -279,11 +288,11 @@ export const RiskMapPage = () => {
       setLocalMarkers(generated);
       await fetchWeatherForMarkers(generated);
 
-      setStatus(`📍 ${displayName}, ${d}`);
+      setStatus(`📍 ${displayName}, ${countrySubtitle}`);
     } catch (err) {
       console.warn('Location sync error:', err);
       const fallback = ODISHA_DISTRICT_COORDS[d] || ODISHA_DISTRICT_COORDS['Khordha'];
-      setCoords({ lat: fallback.lat, lon: fallback.lon, name: displayName, country: `${d}, Odisha` });
+      setCoords({ lat: fallback.lat, lon: fallback.lon, name: displayName, country: countrySubtitle });
       await fetchWeather(fallback.lat, fallback.lon);
     }
     setLoading(false);
