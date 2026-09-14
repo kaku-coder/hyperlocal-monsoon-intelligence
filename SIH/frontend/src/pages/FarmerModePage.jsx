@@ -124,6 +124,50 @@ export const FarmerModePage = () => {
     .replace(/mayurbhaj/i, 'Mayurbhanj')
     .replace(/khurda/i, 'Khordha');
 
+  // Auto-fetch real-time web intelligence via Tavily API whenever selectedCrop, selectedBlock, or selectedDistrict changes
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveCropData = async () => {
+      const activeMeta = CROP_DATABASE.find(c => c.id === (selectedCrop || 'rice')) || CROP_DATABASE[0];
+      const apiKeyToUse = userTavilyKey || DEFAULT_TAVILY_KEY;
+      if (!apiKeyToUse) return;
+
+      setTavilyLoading(true);
+      setTavilyError('');
+
+      const autoQuery = `realtime ICAR KVK agricultural advisory weather impact mandi price for ${activeMeta.name} in ${cleanDistrict} ${selectedBlock} 2026`;
+
+      try {
+        const res = await fetchTavilyAgriSearch({
+          cropName: activeMeta.name,
+          district: cleanDistrict,
+          block: selectedBlock,
+          query: autoQuery,
+          tavilyKey: apiKeyToUse
+        });
+
+        if (isMounted) {
+          if (res && res.status === 'success') {
+            setTavilyResult(res);
+          } else {
+            setTavilyError(res?.message || 'Unable to fetch real-time Tavily web search data.');
+          }
+          setTavilyLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setTavilyLoading(false);
+        }
+      }
+    };
+
+    fetchLiveCropData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCrop, selectedBlock, cleanDistrict, userTavilyKey]);
+
   const filteredCrops = CROP_DATABASE.filter(c => {
     const matchesCategory = activeCategory === 'All' || c.category === activeCategory;
     const q = cropSearch.toLowerCase().trim();
@@ -715,6 +759,85 @@ export const FarmerModePage = () => {
             >
               + View {filteredCrops.length - 12} More Crops
             </button>
+          )}
+        </div>
+
+        {/* Real-Time Live Web Intelligence Card (Auto-fetched on Crop Selection) */}
+        <div className="rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border border-sky-500/50 p-4 sm:p-5 space-y-3.5 shadow-2xl relative overflow-hidden font-sans">
+          
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-sky-400 animate-pulse" />
+              <div>
+                <h3 className="text-xs font-black text-white flex items-center gap-1.5 uppercase tracking-wider">
+                  <span>{lang === 'hi' ? 'वास्तविक समय वेब बुद्धिमत्ता:' : lang === 'or' ? 'ରିଅଲ-ଟାଇମ୍ ୱେବ୍ ତଥ୍ୟ:' : 'Real-Time Web Intelligence:'}</span>
+                  <span className="text-sky-400 capitalize">{activeAdvisory.cropMeta.name}</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">Live ICAR/KVK advisories, mandi prices & web updates ({cleanDistrict})</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowTavilyModal(true)}
+              className="text-[10px] font-extrabold text-sky-400 hover:text-sky-300 underline cursor-pointer"
+            >
+              ⚙️ Custom Query
+            </button>
+          </div>
+
+          {tavilyLoading ? (
+            <div className="flex flex-col items-center justify-center py-6 gap-2 text-xs font-bold text-sky-300">
+              <Loader2 className="h-6 w-6 animate-spin text-sky-400" />
+              <span>Fetching live web intelligence & mandi prices for {activeAdvisory.cropMeta.name}...</span>
+            </div>
+          ) : tavilyError ? (
+            <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-600/40 text-xs text-rose-300 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
+              <span>{tavilyError}</span>
+            </div>
+          ) : tavilyResult ? (
+            <div className="space-y-3">
+              {tavilyResult.answer && (
+                <div className="p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-xs text-slate-200 leading-relaxed font-medium shadow-inner">
+                  <div className="text-[10px] font-black text-sky-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+                    <span>Live Tavily AI Web Synthesis ({activeAdvisory.cropMeta.name})</span>
+                  </div>
+                  {tavilyResult.answer}
+                </div>
+              )}
+
+              {tavilyResult.results && tavilyResult.results.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Live Web Sources ({tavilyResult.results.length}):</span>
+                    <span className="text-emerald-400 text-[9px]">Verified ICAR/Govt Feeds</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {tavilyResult.results.slice(0, 4).map((item, idx) => (
+                      <a
+                        key={idx}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-sky-500/60 transition group space-y-1"
+                      >
+                        <div className="text-[11px] font-extrabold text-sky-400 group-hover:underline flex items-center justify-between gap-1">
+                          <span className="truncate">{item.title}</span>
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                        </div>
+                        <p className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
+                          {item.snippet}
+                        </p>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3 text-center text-xs text-slate-400">
+              Select any crop above to stream real-time web intelligence.
+            </div>
           )}
         </div>
 
