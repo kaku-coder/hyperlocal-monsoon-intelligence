@@ -565,8 +565,9 @@ export const SoilScannerPage = () => {
 
               <div className="grid w-full grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6 2xl:gap-5">
                 {/* Card 1: Moisture */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Moisture</span>
+                <div className="group relative overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-b from-amber-950/50 via-slate-900 to-slate-950 p-4 space-y-1.5 shadow-lg shadow-black/30 hover:border-amber-300/50 hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
+                  <span className="text-[11px] font-bold text-amber-200/80 uppercase tracking-wider flex items-center gap-1.5">💧 Moisture</span>
                   <p className="text-sm font-extrabold text-amber-400">
                     {report.visualAnalysis?.apparentMoisture?.value || 'Visually Dry'}
                   </p>
@@ -576,8 +577,9 @@ export const SoilScannerPage = () => {
                 </div>
 
                 {/* Card 2: Texture */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Texture</span>
+                <div className="group relative overflow-hidden rounded-2xl border border-sky-400/25 bg-gradient-to-b from-sky-950/50 via-slate-900 to-slate-950 p-4 space-y-1.5 shadow-lg shadow-black/30 hover:border-sky-300/50 hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 to-cyan-400" />
+                  <span className="text-[11px] font-bold text-sky-200/80 uppercase tracking-wider flex items-center gap-1.5">⛰️ Texture</span>
                   <p className="text-sm font-extrabold text-sky-400">
                     {report.visualAnalysis?.texture?.classification || 'Likely Loam'}
                   </p>
@@ -585,8 +587,9 @@ export const SoilScannerPage = () => {
                 </div>
 
                 {/* Card 3: Organic Matter */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Organic Residue</span>
+                <div className="group relative overflow-hidden rounded-2xl border border-emerald-400/25 bg-gradient-to-b from-emerald-950/50 via-slate-900 to-slate-950 p-4 space-y-1.5 shadow-lg shadow-black/30 hover:border-emerald-300/50 hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-lime-400" />
+                  <span className="text-[11px] font-bold text-emerald-200/80 uppercase tracking-wider flex items-center gap-1.5">🌱 Organic Residue</span>
                   <p className="text-xs font-bold text-emerald-400 line-clamp-1">
                     {report.visualAnalysis?.organicMatterAppearance?.value || 'Moderate'}
                   </p>
@@ -594,8 +597,9 @@ export const SoilScannerPage = () => {
                 </div>
 
                 {/* Card 4: Compaction */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Compaction</span>
+                <div className="group relative overflow-hidden rounded-2xl border border-indigo-400/25 bg-gradient-to-b from-indigo-950/50 via-slate-900 to-slate-950 p-4 space-y-1.5 shadow-lg shadow-black/30 hover:border-indigo-300/50 hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-400" />
+                  <span className="text-[11px] font-bold text-indigo-200/80 uppercase tracking-wider flex items-center gap-1.5">🧱 Compaction</span>
                   <p className="text-sm font-extrabold text-indigo-400">
                     {report.visualAnalysis?.surfaceCondition?.compaction || 'Possible'}
                   </p>
@@ -603,8 +607,9 @@ export const SoilScannerPage = () => {
                 </div>
 
                 {/* Card 5: Waterlogging */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Waterlogging Risk</span>
+                <div className="group relative overflow-hidden rounded-2xl border border-teal-400/25 bg-gradient-to-b from-teal-950/50 via-slate-900 to-slate-950 p-4 space-y-1.5 shadow-lg shadow-black/30 hover:border-teal-300/50 hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-cyan-400" />
+                  <span className="text-[11px] font-bold text-teal-200/80 uppercase tracking-wider flex items-center gap-1.5">🌊 Waterlogging Risk</span>
                   <p className="text-sm font-extrabold text-teal-400">
                     {report.visualAnalysis?.waterlogging?.risk || 'Low Risk'}
                   </p>
@@ -612,8 +617,9 @@ export const SoilScannerPage = () => {
                 </div>
 
                 {/* Card 6: Erosion */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Erosion Risk</span>
+                <div className="group relative overflow-hidden rounded-2xl border border-lime-400/25 bg-gradient-to-b from-lime-950/40 via-slate-900 to-slate-950 p-4 space-y-1.5 shadow-lg shadow-black/30 hover:border-lime-300/50 hover:-translate-y-0.5 transition-all">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-lime-500 to-emerald-400" />
+                  <span className="text-[11px] font-bold text-lime-200/80 uppercase tracking-wider flex items-center gap-1.5">🏔️ Erosion Risk</span>
                   <p className="text-sm font-extrabold text-emerald-400">
                     {report.visualAnalysis?.erosion?.risk || 'Low Risk'}
                   </p>
@@ -622,30 +628,36 @@ export const SoilScannerPage = () => {
               </div>
             </div>
 
-            {/* STEP 10: WEATHER + SOIL SYNERGY INSIGHT CARD */}
+            {/* STEP 10: WEATHER + SOIL SYNERGY INSIGHT CARD — full-width premium banner */}
             {report.weatherContext && (
-              <div className="bg-gradient-to-r from-sky-950/60 via-slate-900 to-slate-950 border border-sky-500/30 rounded-2xl p-5 space-y-2 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Droplets className="w-4 h-4 text-sky-400" />
+              <div className="relative w-full overflow-hidden rounded-3xl border border-sky-400/25 bg-gradient-to-r from-sky-950/70 via-slate-900 to-emerald-950/40 p-5 sm:p-7 xl:p-8 shadow-2xl shadow-sky-950/30">
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute -top-16 right-16 h-48 w-48 rounded-full bg-sky-500/20 blur-[70px]" />
+                </div>
+                <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <span className="text-xs font-black text-sky-300 uppercase tracking-wider flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/20 border border-sky-400/30">
+                      <Droplets className="w-4 h-4 text-sky-300" />
+                    </span>
                     Soil + Live Weather Synergy Insight
                   </span>
-                  <span className="text-xs text-slate-400">7-Day Rain: {report.weatherContext.rainfall}</span>
+                  <span className="w-fit text-[11px] font-bold px-3 py-1.5 rounded-full bg-sky-400/15 border border-sky-300/30 text-sky-200">🌧️ 7-Day Rain: {report.weatherContext.rainfall}</span>
                 </div>
-                <p className="text-sm text-slate-200 font-medium leading-relaxed">
-                  "{report.weatherContext.insight}"
+                <p className="relative mt-3 text-sm sm:text-[15px] xl:text-base text-slate-100 font-medium leading-relaxed max-w-5xl">
+                  &ldquo;{report.weatherContext.insight}&rdquo;
                 </p>
               </div>
             )}
 
-            {/* STEP 6: CROP RECOMMENDATION ENGINE */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+            {/* STEP 6: CROP RECOMMENDATION ENGINE — full-width */}
+            <div className="w-full space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <span className="h-7 w-1 rounded-full bg-gradient-to-b from-emerald-400 to-teal-600" />
                   <Sprout className="w-5 h-5 text-emerald-400" />
                   Location & Season Aware Crop Match
                 </h3>
-                <span className="text-xs text-slate-400">Calculated for {selectedDistrict} district</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-300/20 text-emerald-200">📍 Calculated for {selectedDistrict} district</span>
               </div>
 
               <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:gap-5 2xl:gap-6">

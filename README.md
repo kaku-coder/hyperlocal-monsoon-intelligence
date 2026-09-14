@@ -101,6 +101,7 @@ This platform exists to close the gap between **where weather science happens** 
 | 🧠 **ML Microservice** | Python FastAPI probabilistic prediction + explainability service |
 | 🌐 **Live Web AI Search** | Real-time SerpApi Google Search & Tavily AI Web Intelligence for ICAR/KVK advisories & mandi prices |
 | 📍 **Live GPS Geocoding** | Instant browser geolocation & OpenStreetMap Nominatim reverse-geocoding to detect district & block |
+| 📡 **12h Rain Nowcast** | Real-time 12-hour ML radar nowcast service with automatic Fast2SMS alert dispatch |
 | 🔤 **Localization Engine** | Full EN / HI / OR translation engine with text-to-speech |
 
 ---
