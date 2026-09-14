@@ -91,7 +91,22 @@
 
 <script>
 /* ============ CONFIG / STATE ============ */
-const API_BASE = (localStorage.getItem('saathi_api_base') || '/api').replace(/\/$/, '');
+let API_BASE = null; // auto-detected at startup via probe chain
+const API_PROBE_TIMEOUT = 3500;
+
+// Probe order: (1) saved override, (2) same-origin /api (proxy), (3) local backend, (4) deployed backend
+function apiCandidates() {
+  const saved = (localStorage.getItem('saathi_api_base') || '').replace(/\/+$/, '');
+  const list = [];
+  if (saved) list.push(saved);
+  if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && location.origin) {
+    list.push(location.origin.replace(/\/+$/, '') + '/api');
+  }
+  list.push('http://localhost:5005/api');
+  list.push('https://hyperlocal-monsoon-intelligence.onrender.com/api');
+  return [...new Set(list)];
+}
+
 const PHONE_DEFAULT = localStorage.getItem('moes_phone') || '9508165261';
 
 const state = {
@@ -108,10 +123,13 @@ const state = {
   tavilyError: '',
   checkingWeather: false,
   nowcastData: null,
+  nowcastError: '',
   smsSent: false,
   isPlayingAudio: false,
   ttsError: false,
-  forecastData: null
+  forecastData: null,
+  apiStatus: 'checking', // 'checking' | 'live' | 'offline'
+  apiSource: ''
 };
 
 const DEFAULT_LOCATION = {
@@ -499,7 +517,31 @@ async function fetchTavilyAgriSearch({ cropName, district, block, query, tavilyK
   return null;
 }
 
+async function probeApiBase() {
+  const locId = location.locationId;
+  const url = (base) => `${base}/forecast/${encodeURIComponent(locId)}?horizon=7&panchayat=${encodeURIComponent(location.panchayat)}`;
+  for (const base of apiCandidates()) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), API_PROBE_TIMEOUT);
+      const res = await fetch(url(base), { signal: ctrl.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'success' && data.metrics) {
+          console.log('Live API detected at:', base);
+          return base;
+        }
+      }
+    } catch (e) {
+      console.warn('API probe failed for', base, e.message);
+    }
+  }
+  return null;
+}
+
 async function loadForecast() {
+  if (!API_BASE) return;
   try {
     const res = await fetch(`${API_BASE}/forecast/${encodeURIComponent(location.locationId)}?horizon=7&panchayat=${encodeURIComponent(location.panchayat)}`);
     if (res.ok) {
@@ -524,11 +566,19 @@ function showToast(msg) {
 async function handleCheckWeather() {
   state.checkingWeather = true;
   state.smsSent = false;
+  state.nowcastError = '';
   renderMain();
   const result = await checkWeatherAlert();
   state.nowcastData = result;
   state.checkingWeather = false;
   if (result && result.sms_delivery) state.smsSent = true;
+  if (!result) {
+    state.nowcastError = state.lang === 'hi'
+      ? 'रियल-टाइम नाउकास्ट सेवा उपलब्ध नहीं है। कृपया बैकएंड शुरू करें (start-all.bat) या API बेस जाँचें।'
+      : state.lang === 'or'
+      ? 'ରିୟଲ-ଟାଇମ୍ ନାଓକାଷ୍ଟ ସେବା ଉପଲବ୍ଧ ନାହିଁ। ଦୟାକରି ବ୍ୟାକଏଣ୍ଡ ଆରମ୍ଭ କରନ୍ତୁ (start-all.bat)।'
+      : 'Real-time nowcast service unavailable. Start the backend (start-all.bat) or check the API base.';
+  }
   renderMain();
 }
 
@@ -743,6 +793,12 @@ function renderMain() {
         </div>
       </div>
 
+      <!-- Live Data Status -->
+      <div class="flex items-center justify-between gap-2">
+        ${statusPill()}
+        <button onclick="retryLiveData()" class="text-[10px] font-bold text-sky-400 hover:text-sky-300 cursor-pointer underline underline-offset-2">↻ Retry live data</button>
+      </div>
+
       <!-- 3 Quick Status Indicators -->
       <div class="grid grid-cols-3 gap-2 text-center">
         <div class="rounded-2xl bg-slate-900 border border-slate-800 p-3 space-y-1 shadow-md">
@@ -915,6 +971,11 @@ function nowcastBody() {
   if (state.checkingWeather) {
     return `<div class="flex items-center justify-center gap-2 py-4 text-slate-400 text-xs font-semibold">
       ${spinnerHtml('text-cyan-400')}<span>Contacting real-time ML radar...</span></div>`;
+  }
+  if (state.nowcastError) {
+    return `<div class="flex items-center gap-2.5 rounded-xl bg-rose-950/60 border border-rose-600/50 p-3">
+      ${iconHtml('alert-triangle', 'text-rose-300 flex-shrink-0', 18)}
+      <div class="text-[10px] leading-snug text-rose-200 font-semibold">${escapeHtml(state.nowcastError)}</div></div>`;
   }
   if (state.nowcastData) {
     const n = state.nowcastData;

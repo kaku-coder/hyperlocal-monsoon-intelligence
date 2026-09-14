@@ -214,7 +214,7 @@ const LOCAL_ODISHA_DB = {
   ]
 };
 
-const normalizeDistrictKey = (district) => {
+export const normalizeDistrictName = (district) => {
   if (!district) return 'Khordha';
   const d = district.toLowerCase().trim();
   if (d.includes('balasore') || d.includes('baleswar')) return 'Balasore';
@@ -228,11 +228,14 @@ const normalizeDistrictKey = (district) => {
   if (d.includes('mayurbhanj')) return 'Mayurbhanj';
   if (d.includes('jajpur')) return 'Jajpur';
   if (d.includes('sambalpur')) return 'Sambalpur';
-  // direct match fallback
   const keys = Object.keys(LOCAL_ODISHA_DB);
   const direct = keys.find(k => k.toLowerCase() === d);
   if (direct) return direct;
-  return 'Khordha';
+  return district.trim();
+};
+
+const normalizeDistrictKey = (district) => {
+  return normalizeDistrictName(district);
 };
 
 export const getLocalFallbackBlocks = (district) => {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchDistricts, fetchBlocks, fetchPanchayats, fetchForecast, fetchMeApi, logoutUserApi, getLocalFallbackBlocks, subscribeWeatherAlertsSSE } from '../services/api';
+import { fetchDistricts, fetchBlocks, fetchPanchayats, fetchForecast, fetchMeApi, logoutUserApi, getLocalFallbackBlocks, normalizeDistrictName, subscribeWeatherAlertsSSE } from '../services/api';
 
 import locationSocket from '../utils/socketService';
 
@@ -27,9 +27,16 @@ export const AppProvider = ({ children }) => {
   // Location Hierarchy State (Persisted in localStorage & synced with logged-in user)
   const [selectedState, setSelectedState] = useState('Odisha');
   const [districts, setDistricts] = useState([]);
-  const [selectedDistrict, setSelectedDistrict] = useState(() => {
-    return localStorage.getItem('moes_selected_district') || savedUser?.district || 'Khordha';
+  const [selectedDistrict, setSelectedDistrictState] = useState(() => {
+    const raw = localStorage.getItem('moes_selected_district') || savedUser?.district || 'Khordha';
+    return normalizeDistrictName(raw);
   });
+
+  const setSelectedDistrict = (d) => {
+    const norm = normalizeDistrictName(d);
+    setSelectedDistrictState(norm);
+    localStorage.setItem('moes_selected_district', norm);
+  };
   const [blocks, setBlocks] = useState([]);
   const [selectedBlock, setSelectedBlock] = useState(() => {
     return localStorage.getItem('moes_selected_block') || savedUser?.block || 'Bhubaneswar';

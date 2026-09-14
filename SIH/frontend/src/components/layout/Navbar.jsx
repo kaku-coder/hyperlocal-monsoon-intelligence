@@ -151,6 +151,11 @@ export const Navbar = () => {
         className="bg-slate-800/80 hover:bg-slate-800 text-sky-300 font-semibold rounded-lg px-1.5 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer max-w-[95px] 2xl:max-w-[130px] shrink truncate text-[11px]"
       >
         {districtCount === 0 && <option value="">Loading…</option>}
+        {selectedDistrict && districts && !districts.includes(selectedDistrict) && (
+          <option value={selectedDistrict} className="bg-slate-900 text-white font-bold">
+            {selectedDistrict}
+          </option>
+        )}
         {(districts || []).map(d => (
           <option key={d} value={d} className="bg-slate-900 text-white">
             {d}
@@ -168,6 +173,11 @@ export const Navbar = () => {
         className="bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-bold rounded-lg px-1.5 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer max-w-[105px] 2xl:max-w-[140px] shrink truncate text-[11px]"
       >
         {blockCount === 0 && <option value="">No blocks</option>}
+        {selectedBlock && blocks && !blocks.some(b => b.block === selectedBlock) && (
+          <option value={selectedBlock} className="bg-slate-900 text-white font-bold">
+            {selectedBlock}
+          </option>
+        )}
         {(blocks || []).map(b => (
           <option key={b.id || b.block} value={b.block} className="bg-slate-900 text-white">
             {b.block} ({b.panchayats?.length || 0} GPs)
