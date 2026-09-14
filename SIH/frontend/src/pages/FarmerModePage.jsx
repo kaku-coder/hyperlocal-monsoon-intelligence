@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { translations } from '../utils/localization';
 import { playTextToSpeech, stopTextToSpeech } from '../utils/tts';
-import { checkWeatherAlert } from '../services/api';
+import { checkWeatherAlert, fetchTavilyAgriSearch } from '../services/api';
 import { 
   Sprout, 
   CloudRain, 
@@ -23,18 +23,55 @@ import {
   ShieldAlert,
   ShieldCheck,
   TrendingUp,
-  Info
+  Search,
+  Globe,
+  ExternalLink,
+  Key,
+  Filter,
+  X
 } from 'lucide-react';
 
+const CROP_CATEGORIES = ['All', 'Cereals', 'Pulses', 'Oilseeds', 'Vegetables', 'Spices', 'Cash Crops', 'Fruits'];
+
 const CROP_DATABASE = [
-  { id: 'rice', name: 'Rice (Paddy)', name_hi: 'धान (चावल)', name_or: 'ଧାନ (Paddy)', icon: '🌾' },
-  { id: 'maize', name: 'Maize (Corn)', name_hi: 'मक्का', name_or: 'ମକା (Corn)', icon: '🌽' },
-  { id: 'groundnut', name: 'Groundnut', name_hi: 'मूंगफली', name_or: 'ଚିନାବାଦାମ (Peanut)', icon: '🥜' },
-  { id: 'pulses', name: 'Pulses (Arhar / Moong)', name_hi: 'दालें (अरहर / मूंग)', name_or: 'ଡାଲି (Arhar/Moong)', icon: '🌱' },
-  { id: 'vegetables', name: 'Vegetables', name_hi: 'सब्जियां (बैंगन/भिंडी)', name_or: 'ପରିବା (Vegetables)', icon: '🥦' },
-  { id: 'cotton', name: 'Cotton', name_hi: 'कपास', name_or: 'କପା (Cotton)', icon: '☁️' },
-  { id: 'wheat', name: 'Wheat (Gaham)', name_hi: 'गेहूं', name_or: 'ଗହମ (Wheat)', icon: '🌾' },
-  { id: 'sugarcane', name: 'Sugarcane', name_hi: 'गन्ना', name_or: 'ଆଖୁ (Sugarcane)', icon: '🎋' }
+  // 1. Cereals & Millets
+  { id: 'rice', category: 'Cereals', name: 'Rice (Paddy)', name_hi: 'धान (चावल)', name_or: 'ଧାନ (Paddy)', icon: '🌾' },
+  { id: 'wheat', category: 'Cereals', name: 'Wheat (Gaham)', name_hi: 'गेहूं', name_or: 'ଗହମ (Wheat)', icon: '🌾' },
+  { id: 'maize', category: 'Cereals', name: 'Maize (Corn)', name_hi: 'मक्का', name_or: 'ମକା (Corn)', icon: '🌽' },
+  { id: 'jowar', category: 'Cereals', name: 'Jowar (Sorghum)', name_hi: 'ज्वार', name_or: 'ଜୁଆର (Sorghum)', icon: '🌾' },
+  { id: 'bajra', category: 'Cereals', name: 'Bajra (Pearl Millet)', name_hi: 'बाजरा', name_or: 'ବାଜରା (Bajra)', icon: '🌾' },
+  { id: 'ragi', category: 'Cereals', name: 'Ragi (Finger Millet)', name_hi: 'रागी (मंडुआ)', name_or: 'ମାଣ୍ଡିଆ (Ragi)', icon: '🌾' },
+
+  // 2. Pulses (Legumes)
+  { id: 'pulses', category: 'Pulses', name: 'Pulses (Arhar/Tur)', name_hi: 'दालें (अरहर/तुअर)', name_or: 'ଡାଲି (ହରଡ଼/ତୁଅର)', icon: '🌱' },
+  { id: 'moong', category: 'Pulses', name: 'Moong (Green Gram)', name_hi: 'मूंग दाल', name_or: 'ମୁଗ ଡାଲି (Green Gram)', icon: '🌱' },
+  { id: 'urad', category: 'Pulses', name: 'Urad / Biri (Black Gram)', name_hi: 'उड़द दाल', name_or: 'ବିରି ଡାଲି (Black Gram)', icon: '🌱' },
+  { id: 'chana', category: 'Pulses', name: 'Chana (Chickpea)', name_hi: 'चना (छोला)', name_or: 'ବୁଟ/ଚଣା (Chickpea)', icon: '🌱' },
+  { id: 'lentil', category: 'Pulses', name: 'Masoor (Lentil)', name_hi: 'मसूर दाल', name_or: 'ମସୁର ଡାଲି (Lentil)', icon: '🌱' },
+
+  // 3. Oilseeds
+  { id: 'groundnut', category: 'Oilseeds', name: 'Groundnut (Peanut)', name_hi: 'मूंगफली', name_or: 'ଚିନାବାଦାମ (Groundnut)', icon: '🥜' },
+  { id: 'mustard', category: 'Oilseeds', name: 'Mustard (Sarson)', name_hi: 'सरसों (राई)', name_or: 'ସୋରିଷ (Mustard)', icon: '🟡' },
+  { id: 'soybean', category: 'Oilseeds', name: 'Soybean', name_hi: 'सोयाबीन', name_or: 'ସୋୟାବିନ୍ (Soybean)', icon: '🫘' },
+  { id: 'sunflower', category: 'Oilseeds', name: 'Sunflower', name_hi: 'सूरजमुखी', name_or: 'ସୂର୍ଯ୍ୟମୁଖୀ (Sunflower)', icon: '🌻' },
+  { id: 'sesame', category: 'Oilseeds', name: 'Sesame (Til)', name_hi: 'तिल', name_or: 'ରାଶି/ତିଳ (Sesame)', icon: '⚪' },
+
+  // 4. Vegetables & Spices
+  { id: 'vegetables', category: 'Vegetables', name: 'Vegetables (Brinjal/Okra)', name_hi: 'सब्जियां (बैंगन/भिंडी)', name_or: 'ପରିବା (ବାଇଗଣ/ଭେଣ୍ଡି)', icon: '🥦' },
+  { id: 'potato', category: 'Vegetables', name: 'Potato (Aloo)', name_hi: 'आलू', name_or: 'ଆଳୁ (Potato)', icon: '🥔' },
+  { id: 'tomato', category: 'Vegetables', name: 'Tomato', name_hi: 'टमाटर', name_or: 'ଟମାଟୋ (Tomato)', icon: '🍅' },
+  { id: 'onion', category: 'Vegetables', name: 'Onion', name_hi: 'प्याज', name_or: 'ପିଆଜ (Onion)', icon: '🧅' },
+  { id: 'chilli', category: 'Vegetables', name: 'Chilli (Lanka)', name_hi: 'मिर्च', name_or: 'ଲଙ୍କା (Chilli)', icon: '🌶️' },
+  { id: 'turmeric', category: 'Spices', name: 'Turmeric (Haldi)', name_hi: 'हल्दी', name_or: 'ହଳଦୀ (Turmeric)', icon: '🟨' },
+  { id: 'ginger', category: 'Spices', name: 'Ginger (Ada)', name_hi: 'अदरक', name_or: 'ଅଦା (Ginger)', icon: '🟤' },
+  { id: 'garlic', category: 'Spices', name: 'Garlic (Rasuna)', name_hi: 'लहसुन', name_or: 'ରସୁଣ (Garlic)', icon: '🧄' },
+
+  // 5. Cash, Fiber & Fruits
+  { id: 'cotton', category: 'Cash Crops', name: 'Cotton (Kapa)', name_hi: 'कपास', name_or: 'କପା (Cotton)', icon: '☁️' },
+  { id: 'sugarcane', category: 'Cash Crops', name: 'Sugarcane (Akhu)', name_hi: 'गन्ना', name_or: 'ଆଖୁ (Sugarcane)', icon: '🎋' },
+  { id: 'jute', category: 'Cash Crops', name: 'Jute (Jhota)', name_hi: 'पटसन / जूट', name_or: 'ଝୋଟ (Jute)', icon: '🧶' },
+  { id: 'mango', category: 'Fruits', name: 'Mango (Amba)', name_hi: 'आम', name_or: 'ଆମ୍ବ (Mango)', icon: '🥭' },
+  { id: 'banana', category: 'Fruits', name: 'Banana (Kadali)', name_hi: 'केला', name_or: 'କଦଳୀ (Banana)', icon: '🍌' }
 ];
 
 export const FarmerModePage = () => {
@@ -51,11 +88,23 @@ export const FarmerModePage = () => {
   } = useApp();
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [showCropModal, setShowCropModal] = useState(false);
   const [nowcastData, setNowcastData] = useState(null);
   const [checkingWeather, setCheckingWeather] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
   const [ttsError, setTtsError] = useState(false);
+
+  // Crop Catalog Filter & Search State
+  const [cropSearch, setCropSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [showCropCatalogModal, setShowCropCatalogModal] = useState(false);
+
+  // Tavily Real-Time AI Search State
+  const [showTavilyModal, setShowTavilyModal] = useState(false);
+  const [userTavilyKey, setUserTavilyKey] = useState(() => localStorage.getItem('moes_tavily_key') || '');
+  const [tavilyQuery, setTavilyQuery] = useState('');
+  const [tavilyLoading, setTavilyLoading] = useState(false);
+  const [tavilyResult, setTavilyResult] = useState(null);
+  const [tavilyError, setTavilyError] = useState('');
 
   const t = translations[farmerLanguage] || translations.en;
   const lang = farmerLanguage || 'en';
@@ -74,6 +123,13 @@ export const FarmerModePage = () => {
     .replace(/mayurbhaj/i, 'Mayurbhanj')
     .replace(/khurda/i, 'Khordha');
 
+  const filteredCrops = CROP_DATABASE.filter(c => {
+    const matchesCategory = activeCategory === 'All' || c.category === activeCategory;
+    const q = cropSearch.toLowerCase().trim();
+    const matchesSearch = !q || c.name.toLowerCase().includes(q) || c.name_hi.includes(q) || c.name_or.includes(q) || c.id.includes(q);
+    return matchesCategory && matchesSearch;
+  });
+
   const getCropTimeAdvisory = () => {
     const isBreak = (m.break_probability || 0) >= 0.60;
     const isHeavyRain = (m.heavy_rain_probability || 0) >= 0.60;
@@ -83,7 +139,9 @@ export const FarmerModePage = () => {
     const cropLabel = lang === 'hi' ? meta.name_hi : lang === 'or' ? meta.name_or : meta.name;
 
     // Season & Time Window text
-    const seasonWindow = activeCropId === 'wheat'
+    const rabiCrops = ['wheat', 'chana', 'lentil', 'mustard', 'potato'];
+    const isRabi = rabiCrops.includes(activeCropId);
+    const seasonWindow = isRabi
       ? (lang === 'hi' ? 'रबी सीजन (नवंबर-दिसंबर बुवाई समय)' : lang === 'or' ? 'ରବି ଋତୁ (ନଭେମ୍ବର-ଡିସେମ୍ବର ବୁଣା ସମୟ)' : 'Rabi Season (Nov–Dec Window)')
       : (lang === 'hi' ? 'खरीफ सीजन (जून-जुलाई बुवाई एवं वृद्धि समय)' : lang === 'or' ? 'ଖରିଫ ଋତୁ (ଜୁନ୍-ଜୁଲାଇ ବୁଣା ସମୟ)' : 'Kharif Season (June–July Window)');
 
@@ -281,7 +339,7 @@ export const FarmerModePage = () => {
           ]
         : lang === 'or'
         ? [
-            "ଗଜା ହାର ୯୦-<ctrl42>୫% ପର୍ଯ୍ୟନ୍ତ ବୃଦ୍ଧି ପାଏ।",
+            "ଗଜା ହାର ୯୦-୯୫% ପର୍ଯ୍ୟନ୍ତ ବୃଦ୍ଧି ପାଏ।",
             "ମଜବୁତ୍ ଚେର ଓ ଉତ୍ତମ ତଳି ବୃଦ୍ଧି ହୁଏ।"
           ]
         : [
@@ -341,6 +399,35 @@ export const FarmerModePage = () => {
     setNowcastData(result);
     setCheckingWeather(false);
     if (result && result.sms_delivery) setSmsSent(true);
+  };
+
+  const handleTavilySearch = async (e) => {
+    e?.preventDefault();
+    if (!userTavilyKey.trim()) {
+      setTavilyError(lang === 'hi' ? 'कृपया Tavily API Key दर्ज करें' : lang === 'or' ? 'ଦୟାକରି Tavily API Key ପ୍ରବେଶ କରନ୍ତୁ' : 'Please enter your Tavily API Key');
+      return;
+    }
+    setTavilyLoading(true);
+    setTavilyError('');
+    localStorage.setItem('moes_tavily_key', userTavilyKey.trim());
+
+    const activeMeta = CROP_DATABASE.find(c => c.id === selectedCrop) || CROP_DATABASE[0];
+    const queryToUse = tavilyQuery.trim() || `realtime ICAR KVK agricultural advisory weather impact mandi price for ${activeMeta.name} in ${cleanDistrict} ${selectedBlock} 2026`;
+
+    const res = await fetchTavilyAgriSearch({
+      cropName: activeMeta.name,
+      district: cleanDistrict,
+      block: selectedBlock,
+      query: queryToUse,
+      tavilyKey: userTavilyKey.trim()
+    });
+
+    if (res && res.status === 'success') {
+      setTavilyResult(res);
+    } else {
+      setTavilyError(res?.message || 'Failed to fetch Tavily real-time web search results.');
+    }
+    setTavilyLoading(false);
   };
 
   return (
@@ -530,10 +617,20 @@ export const FarmerModePage = () => {
             </div>
           </div>
 
-          {/* Time / Season Window Pill */}
-          <div className="inline-flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-3 py-1 rounded-xl text-[11px] text-amber-300 font-bold">
-            <Calendar className="h-3.5 w-3.5 text-amber-400" />
-            <span>{activeAdvisory.seasonWindow}</span>
+          {/* Time / Season Window Pill & Live Tavily Button */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-3 py-1 rounded-xl text-[11px] text-amber-300 font-bold">
+              <Calendar className="h-3.5 w-3.5 text-amber-400" />
+              <span>{activeAdvisory.seasonWindow}</span>
+            </div>
+
+            <button
+              onClick={() => setShowTavilyModal(true)}
+              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white px-3 py-1 rounded-xl text-[11px] font-black shadow-md transition-all cursor-pointer"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span>🌐 Live Web AI Search</span>
+            </button>
           </div>
 
           {/* Headline Recommendation */}
@@ -561,7 +658,7 @@ export const FarmerModePage = () => {
             <div className="rounded-xl bg-emerald-950/40 border border-emerald-600/40 p-3 space-y-1.5 shadow-inner">
               <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300 uppercase tracking-wider">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <span>{lang === 'hi' ? 'क्या करें (Recommended Actions)' : lang === 'or' ? 'କଣ କରିବେ (Recommended Actions)' : 'Recommended Actions (Do\'s)'}</span>
+                <span>{lang === 'hi' ? 'क्या करें (Recommended Actions)' : lang === 'or' ? '<ctrl42>କଣ କରିବେ (Recommended Actions)' : 'Recommended Actions (Do\'s)'}</span>
               </div>
               <ul className="space-y-1">
                 {activeAdvisory.dos.map((item, idx) => (
@@ -625,15 +722,47 @@ export const FarmerModePage = () => {
 
         </div>
 
-        {/* Quick Crop Switcher Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-            <span>Select Crop to Change Advice / ଫସଲ ବଦଳାନ୍ତୁ:</span>
-            <span className="text-emerald-400 font-mono text-[10px]">8 Crops Available</span>
+        {/* 25+ Crop Catalog Selector Bar */}
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-black text-white flex items-center gap-1.5">
+                <Sprout className="h-4 w-4 text-emerald-400" />
+                <span>25+ All Crops Catalog</span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-medium">
+                Select any crop to view time & weather advisory
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCropCatalogModal(true)}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer shadow-md"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              <span>Browse All ({CROP_DATABASE.length})</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
-            {CROP_DATABASE.map((c) => {
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {CROP_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
+                  activeCategory === cat
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Crop Selector Grid */}
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            {filteredCrops.slice(0, 12).map((c) => {
               const isSelected = selectedCrop === c.id;
               return (
                 <button
@@ -641,8 +770,8 @@ export const FarmerModePage = () => {
                   onClick={() => setSelectedCrop(c.id)}
                   className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
                     isSelected
-                      ? 'bg-emerald-900/80 border-emerald-400 text-white shadow-lg ring-1 ring-emerald-400'
-                      : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                      ? 'bg-emerald-900/90 border-emerald-400 text-white shadow-lg ring-1 ring-emerald-400'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   <span className="text-xl">{c.icon}</span>
@@ -653,6 +782,15 @@ export const FarmerModePage = () => {
               );
             })}
           </div>
+
+          {filteredCrops.length > 12 && (
+            <button
+              onClick={() => setShowCropCatalogModal(true)}
+              className="w-full py-2 text-center text-xs font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
+            >
+              + View {filteredCrops.length - 12} More Crops
+            </button>
+          )}
         </div>
 
         {/* AI SOIL HEALTH SCANNER FEATURE CARD */}
@@ -720,6 +858,201 @@ export const FarmerModePage = () => {
         </div>
 
       </div>
+
+      {/* FULL CROP CATALOG MODAL */}
+      {showCropCatalogModal && (
+        <div className="fixed inset-0 z-[600] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl p-5 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Sprout className="h-5 w-5 text-emerald-400" />
+                <h2 className="text-base font-black text-white">Full Crop Catalog ({CROP_DATABASE.length} Crops)</h2>
+              </div>
+              <button
+                onClick={() => setShowCropCatalogModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-slate-400" />
+              <input
+                type="text"
+                value={cropSearch}
+                onChange={(e) => setCropSearch(e.target.value)}
+                placeholder="Search crop name in English, Hindi, or Odia..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {CROP_CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
+                    activeCategory === cat
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Full Crops Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {filteredCrops.map((c) => {
+                const isSelected = selectedCrop === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setSelectedCrop(c.id);
+                      setShowCropCatalogModal(false);
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                      isSelected
+                        ? 'bg-emerald-950 border-emerald-400 text-white ring-1 ring-emerald-400 shadow-lg'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-2xl">{c.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold truncate">{c.name}</div>
+                      <div className="text-[10px] text-emerald-400 font-semibold">{c.name_hi}</div>
+                      <div className="text-[9px] text-slate-400 truncate">{c.name_or}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIVE TAVILY AI SEARCH MODAL */}
+      {showTavilyModal && (
+        <div className="fixed inset-0 z-[600] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl p-5 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto font-sans">
+            
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-sky-400 animate-pulse" />
+                <div>
+                  <h2 className="text-base font-black text-white">Live Tavily AI Web Intelligence</h2>
+                  <p className="text-[10px] text-slate-400">Real-time web search for ICAR/KVK advisories, mandi prices & weather news</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTavilyModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* API Key Input Row */}
+            <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl space-y-2">
+              <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                <Key className="h-3.5 w-3.5 text-amber-400" />
+                <span>Tavily API Key:</span>
+              </label>
+              <input
+                type="password"
+                value={userTavilyKey}
+                onChange={(e) => setUserTavilyKey(e.target.value)}
+                placeholder="Paste your Tavily API Key (e.g. tvly-dev-xxxx)..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 font-mono"
+              />
+              <div className="text-[9px] text-slate-500">
+                Key will be saved locally in your browser. Get a key from tavily.com
+              </div>
+            </div>
+
+            {/* Custom Query Search Form */}
+            <form onSubmit={handleTavilySearch} className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-300">Custom Search Query (Optional):</label>
+                <input
+                  type="text"
+                  value={tavilyQuery}
+                  onChange={(e) => setTavilyQuery(e.target.value)}
+                  placeholder={`Default: ICAR advisory & mandi price for ${selectedCrop} in ${cleanDistrict}...`}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 mt-1"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={tavilyLoading}
+                className="w-full py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer disabled:opacity-50"
+              >
+                {tavilyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <span>{tavilyLoading ? "Searching Live Web via Tavily..." : "Fetch Real-Time Web Intelligence"}</span>
+              </button>
+            </form>
+
+            {/* Error Display */}
+            {tavilyError && (
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-600/60 text-xs text-rose-200 font-semibold flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-rose-400 flex-shrink-0" />
+                <span>{tavilyError}</span>
+              </div>
+            )}
+
+            {/* Tavily Results Display */}
+            {tavilyResult && (
+              <div className="space-y-3 border-t border-slate-800 pt-3">
+                
+                {/* AI Answer Summary */}
+                {tavilyResult.answer && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-b from-sky-950/60 to-slate-950 border border-sky-500/40 space-y-1.5 shadow-inner">
+                    <div className="text-xs font-black text-sky-300 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Sparkles className="h-4 w-4 text-sky-400" />
+                      <span>Live Tavily AI Web Synthesis</span>
+                    </div>
+                    <p className="text-xs text-slate-200 font-medium leading-relaxed">
+                      {tavilyResult.answer}
+                    </p>
+                  </div>
+                )}
+
+                {/* Web Sources List */}
+                <div className="space-y-2">
+                  <div className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">
+                    Live Web Sources ({tavilyResult.results?.length || 0}):
+                  </div>
+                  {tavilyResult.results?.map((item, idx) => (
+                    <a
+                      key={idx}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-sky-500/60 transition group space-y-1"
+                    >
+                      <div className="text-xs font-extrabold text-sky-400 group-hover:underline flex items-center justify-between gap-2">
+                        <span className="truncate">{item.title}</span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      </div>
+                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-tight">
+                        {item.snippet}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

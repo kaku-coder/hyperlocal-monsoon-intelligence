@@ -536,6 +536,55 @@ const getAutoLocationByIP = async (req, res) => {
   }
 };
 
+const postTavilyAgriSearch = async (req, res) => {
+  const { cropName, district, block, query, tavilyKey: clientKey } = req.body;
+  const apiKey = clientKey || process.env.TAVILY_API_KEY;
+
+  if (!apiKey) {
+    return res.status(400).json({ 
+      status: "error", 
+      message: "Tavily API key is missing. Please provide a Tavily API key." 
+    });
+  }
+
+  const searchQuery = query || `realtime ICAR KVK agricultural advisory weather impact mandi price for ${cropName || 'Kharif crops'} in ${district || 'Odisha'} ${block || ''} 2026`;
+
+  try {
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: searchQuery,
+        search_depth: "basic",
+        include_answer: true,
+        max_results: 5
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return res.json({
+        status: "success",
+        query: searchQuery,
+        answer: data.answer || "Live web intelligence fetched successfully.",
+        results: (data.results || []).map(r => ({
+          title: r.title,
+          url: r.url,
+          snippet: r.content,
+          score: r.score
+        }))
+      });
+    } else {
+      const errText = await response.text();
+      return res.status(response.status).json({ status: "error", message: `Tavily API Error: ${errText}` });
+    }
+  } catch (err) {
+    console.error("Tavily Search Error:", err.message);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
+
 export {
   getAllLocations,
   getDistrictsList,
@@ -548,6 +597,7 @@ export {
   postExplainAdvanced,
   getCropsList,
   postGenerateAdvisory,
+  postTavilyAgriSearch,
   getHistoricalData,
   postHistoricalML,
   getGeoJSONLayer,

@@ -31,6 +31,7 @@ router.get("/climate-signals", controllers.getClimateSignals);
 // Crops & Agro-Advisories
 router.get("/crops", controllers.getCropsList);
 router.post("/advisory", controllers.postGenerateAdvisory);
+router.post("/agri/tavily-search", controllers.postTavilyAgriSearch);
 
  // Historical Analysis + Historical ML
 router.get("/historical/:locationId", controllers.getHistoricalData);

@@ -338,6 +338,22 @@ export const generateAdvisory = async (cropId, locationId, district, block) => {
   return null;
 };
 
+export const fetchTavilyAgriSearch = async ({ cropName, district, block, query, tavilyKey } = {}) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/agri/tavily-search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cropName, district, block, query, tavilyKey })
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchTavilyAgriSearch failed", err);
+  }
+  return null;
+};
+
 export const fetchHistorical = async (locationId) => {
   try {
     const res = await fetch(`${API_BASE_URL}/historical/${encodeURIComponent(locationId)}`);
