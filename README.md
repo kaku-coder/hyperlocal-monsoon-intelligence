@@ -1,8 +1,8 @@
 # 🌧️ Hyperlocal Monsoon Onset & Break Prediction System
 
-### *Block / Village Scale AI Decision Support for Climate-Resilient Agriculture*
+### *Block / Village Scale AI Decision Support for Climate-Resilient Agriculture (MoES / NCMRWF — SIH 2026)*
 
-![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white) ![Tailwind](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18-339933?logo=nodedotjs&logoColor=white) ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white) ![License](https://img.shields.io/badge/License-MIT-green)
+![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white) ![Tailwind](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18-339933?logo=nodedotjs&logoColor=white) ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![SerpApi](https://img.shields.io/badge/SerpApi-Live_Google_Search-4285F4?logo=google&logoColor=white) ![Tavily](https://img.shields.io/badge/Tavily-AI_Web_Intelligence-00C7FF?logo=openai&logoColor=white) ![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white) ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
