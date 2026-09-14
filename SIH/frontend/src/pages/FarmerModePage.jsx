@@ -99,8 +99,9 @@ export const FarmerModePage = () => {
   const [showCropCatalogModal, setShowCropCatalogModal] = useState(false);
 
   // Tavily Real-Time AI Search State
+  const DEFAULT_TAVILY_KEY = import.meta.env.VITE_TAVILY_API_KEY || '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';
   const [showTavilyModal, setShowTavilyModal] = useState(false);
-  const [userTavilyKey, setUserTavilyKey] = useState(() => localStorage.getItem('moes_tavily_key') || '');
+  const [userTavilyKey, setUserTavilyKey] = useState(() => localStorage.getItem('moes_tavily_key') || DEFAULT_TAVILY_KEY);
   const [tavilyQuery, setTavilyQuery] = useState('');
   const [tavilyLoading, setTavilyLoading] = useState(false);
   const [tavilyResult, setTavilyResult] = useState(null);
