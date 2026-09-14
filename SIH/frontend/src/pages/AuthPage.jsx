@@ -211,16 +211,18 @@ export const AuthPage = () => {
       return;
     }
 
-    if (phoneNumber.length < 10) {
+    if (phoneNumber.trim().length < 10) {
       setErrorMsg('Mobile Number must be a valid 10-digit number.');
       return;
     }
 
+    const passwordToUse = password.trim() || phoneNumber.trim();
+
     setLoading(true);
     const res = await registerUserApi({
-      name,
-      phoneNumber,
-      password: `Farmer_${phoneNumber}`,
+      name: name.trim(),
+      phoneNumber: phoneNumber.trim(),
+      password: passwordToUse,
       pincode: pincode || '754212',
       district: district || 'Kendrapara',
       block: block || 'Rajkanika',
@@ -402,6 +404,31 @@ export const AuthPage = () => {
                     maxLength={10}
                     className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="h-3 w-3 text-emerald-400" />
+                    Password
+                  </span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create your password"
+                    className="w-full px-4 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
