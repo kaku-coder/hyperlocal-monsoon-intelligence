@@ -137,7 +137,11 @@ The frontend ships **13 pages** (tabs), each solving a specific job in the monso
 - **Why we use it:** Everyone can see a forecast — but farmers need *"what do I do about it?"*. This engine converts risk into actionable steps (e.g. *Sowing Caution: delay 5–7 days*) and explains the trigger variables behind every recommendation.
 
 ### 8. 👨‍🌾 Farmer Mode — Monsoon Saathi (`FarmerModePage.jsx`)
-- **What it is:** A mobile-first, simplified, high-contrast view designed for the farmer in the field with a **29-Crop Catalog** across 8 categories (Cereals, Pulses, Oilseeds, Vegetables, Spices, Cash Crops, Fruits).
+- **What it is:** A mobile-first, simplified, high-contrast view designed for the farmer in the field with a **29-Crop Catalog** across 8 categories (Cereals, Pulses, Oilseeds, Vegetables, Spices, Cash Crops, Fruits) and 4-grid structured advisory blocks:
+  - 🟢 **Recommended Actions (Do's)**
+  - 🔴 **What NOT to Do (Don'ts)**
+  - 🔵 **Advantages & Benefits**
+  - 🟡 **Risks & Losses if Ignored**
 - **Why we use it:** The core mission — *last-mile reach*. Big touch targets, plain language, **EN/हिन्दी/ଓଡ଼ିଆ** toggle, Live GPS location trigger, 12h Rain Nowcast SMS trigger, and a **Listen to Advice** text-to-speech button remove literacy and language barriers.
 
 ### 9. 📢 Notification Center (`NotificationCenterPage.jsx`)
