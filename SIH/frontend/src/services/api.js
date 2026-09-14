@@ -356,20 +356,41 @@ export const generateAdvisory = async (cropId, locationId, district, block) => {
   return null;
 };
 
+export const buildCuratedAgriIntel = (cropName = 'Rice (Paddy)', district = 'Khordha', block = 'Bhubaneswar') => ({
+  status: 'success',
+  curated: true,
+  query: `curated ICAR KVK advisory for ${cropName} in ${district} ${block}`,
+  answer: `Curated ICAR/KVK advisory for ${cropName} (${district}, ${block}): Maintain field bunds for rainwater harvesting; apply basal fertilizer only after good soil moisture. Check eNAM / Agmarknet for latest ${cropName} mandi prices and contact your nearest KVK (${district}) for variety-specific guidance. Live web search is temporarily unavailable, so this offline advisory is shown.`,
+  results: [
+    { title: 'ICAR — Crop Advisories', url: 'https://icar.gov.in/', snippet: 'Official ICAR crop production advisories, contingency plans and package of practices.', score: 1 },
+    { title: 'KVK Knowledge Network', url: 'https://kvk.icar.gov.in/', snippet: 'Find your nearest Krishi Vigyan Kendra (KVK) for district-specific guidance.', score: 0.95 },
+    { title: 'eNAM — Mandi Prices', url: 'https://enam.gov.in/', snippet: 'Live mandi arrivals and modal prices for paddy and other commodities.', score: 0.9 },
+    { title: 'Agmarknet — Price Search', url: 'https://agmarknet.gov.in/', snippet: 'Commodity-wise daily mandi price reports from across Odisha and India.', score: 0.85 },
+  ],
+});
+
 export const fetchTavilyAgriSearch = async ({ cropName, district, block, query, tavilyKey } = {}) => {
   try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
     const res = await fetch(`${API_BASE_URL}/agri/tavily-search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cropName, district, block, query, tavilyKey })
-    });
-    if (res.ok) {
-      return await res.json();
-    }
+      body: JSON.stringify({ cropName, district, block, query, tavilyKey }),
+      signal: ctrl.signal,
+    }).finally(() => clearTimeout(t));
+    // IMPORTANT: backend returns useful JSON even on 502/400 (error message +
+    // tavily_detail). Parse the body regardless of res.ok so the UI can show
+    // the real reason instead of a generic "Unable to fetch" message.
+    const data = await res.json().catch(() => null);
+    if (data) return data;
+    if (res.ok) return { status: 'success', answer: '', results: [] };
   } catch (err) {
-    console.warn("fetchTavilyAgriSearch failed", err);
+    console.warn('fetchTavilyAgriSearch failed', err);
+    // Network-level failure (backend down): caller falls back to curated intel.
+    return { status: 'error', network: true, message: 'Backend not reachable. Showing curated offline advisory.' };
   }
-  return null;
+  return { status: 'error', message: 'Failed to fetch real-time web search results.' };
 };
 
 export const fetchHistorical = async (locationId) => {

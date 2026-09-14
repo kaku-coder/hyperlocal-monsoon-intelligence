@@ -537,52 +537,92 @@ const getAutoLocationByIP = async (req, res) => {
 };
 
 const postTavilyAgriSearch = async (req, res) => {
-  const { cropName, district, block, query, tavilyKey: clientKey } = req.body;
-  const apiKey = process.env.TAVILY_API_KEY || clientKey || "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";
-
-  if (!apiKey) {
-    return res.status(400).json({ 
-      status: "error", 
-      message: "Tavily API key is missing on backend server." 
-    });
-  }
-
+  const { cropName, district, block, query } = req.body || {};
   const searchQuery = query || `realtime ICAR KVK agricultural advisory weather impact mandi price for ${cropName || 'Kharif crops'} in ${district || 'Odisha'} ${block || ''} 2026`;
 
-  try {
-    const response = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: searchQuery,
-        search_depth: "basic",
-        include_answer: true,
-        max_results: 5
-      })
-    });
+  const serpKey = (process.env.SERP_API_KEY || process.env.SERPAPI_KEY || "376389be72789b9028d88ff7e2975a436d78bb2fab9d4816ff390372ecbc84c7").trim();
+  const tavilyKey = (process.env.TAVILY_API_KEY || "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").trim();
 
-    if (response.ok) {
-      const data = await response.json();
-      return res.json({
-        status: "success",
-        query: searchQuery,
-        answer: data.answer || "Live web intelligence fetched successfully.",
-        results: (data.results || []).map(r => ({
+  // 1. Try SerpApi (Google Live Real-Time Search)
+  if (serpKey) {
+    try {
+      const serpUrl = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(searchQuery)}&location=India&hl=en&gl=in&api_key=${serpKey}`;
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 12000);
+      const sRes = await fetch(serpUrl, { signal: ctrl.signal }).finally(() => clearTimeout(timeout));
+
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        const answer = sData.answer_box?.answer || sData.answer_box?.snippet || sData.organic_results?.[0]?.snippet || `Live Google Search real-time advisory for ${cropName || 'crops'} in ${district || 'Odisha'}.`;
+        const results = (sData.organic_results || []).slice(0, 6).map(r => ({
           title: r.title,
-          url: r.url,
-          snippet: r.content,
-          score: r.score
-        }))
-      });
-    } else {
-      const errText = await response.text();
-      return res.status(response.status).json({ status: "error", message: `Tavily API Error: ${errText}` });
+          url: r.link,
+          snippet: r.snippet,
+          source: r.source || 'Google Search'
+        }));
+
+        if (results.length > 0) {
+          return res.json({
+            status: "success",
+            provider: "SerpApi (Google Live)",
+            query: searchQuery,
+            answer,
+            results
+          });
+        }
+      }
+    } catch (serpErr) {
+      console.warn("SerpApi search error, trying Tavily fallback:", serpErr.message);
     }
-  } catch (err) {
-    console.error("Tavily Search Error:", err.message);
-    res.status(500).json({ status: "error", message: err.message });
   }
+
+  // 2. Fallback to Tavily Search API
+  if (tavilyKey) {
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 12000);
+      const response = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tavilyKey}`
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          search_depth: "basic",
+          include_answer: true,
+          max_results: 5
+        }),
+        signal: ctrl.signal
+      }).finally(() => clearTimeout(timeout));
+
+      const rawText = await response.text();
+      let data = null;
+      try { data = rawText ? JSON.parse(rawText) : null; } catch { data = null; }
+
+      if (response.ok && data) {
+        return res.json({
+          status: "success",
+          provider: "Tavily AI Web",
+          query: searchQuery,
+          answer: data.answer || "Live web intelligence fetched successfully.",
+          results: (data.results || []).map(r => ({
+            title: r.title,
+            url: r.url,
+            snippet: r.content,
+            score: r.score
+          }))
+        });
+      }
+    } catch (err) {
+      console.error("Tavily Search Error:", err.message);
+    }
+  }
+
+  return res.status(502).json({
+    status: "error",
+    message: "Live web search unavailable right now. Showing curated ICAR/KVK advisory."
+  });
 };
 
 export {

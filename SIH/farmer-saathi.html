@@ -121,6 +121,8 @@ const state = {
   tavilyLoading: false,
   tavilyResult: null,
   tavilyError: '',
+  tavilyDetail: '',
+  curated: null,
   checkingWeather: false,
   nowcastData: null,
   nowcastError: '',
@@ -252,6 +254,202 @@ const CROP_DATABASE = [
 ];
 
 const cur = () => t[state.lang] || t.en;
+
+/* ============ CURATED ICAR/KVK OFFLINE INTEL (fallback when Live Web AI is unavailable) ============ */
+const CURATED_INTEL = {
+  rice: {
+    wind: 'Kharif · June–July',
+    dos: [
+      'Use certified varieties — Swarna, Pratiksha (CR Dhan 701) or Ajit for medium lands.',
+      'Maintain 25×25 cm spacing with 2–3 seedlings per hill for a healthy tiller count.',
+      'Split nitrogen: 50% as basal + 50% top-dressing at 21–25 days after transplanting.',
+      'Control stem borer & leaf folder with pheromone traps and need-based spraying.'
+    ],
+    care: 'Keep 3–5 cm standing water during tillering; drain the field 7 days before harvest.',
+    mandi: 'MSP ~₹2,300/quintal (Grade A). Odisha Rice Research Institute offers short-duration varieties for flood-prone blocks.'
+  },
+  wheat: {
+    wind: 'Rabi · Nov–Dec',
+    dos: ['Sow HD 3086 / DBW 187 (disease-tolerant, high-yield).', 'Seed treatment with Vitavax/Trichoderma before sowing.', 'Light irrigation at CRI stage (21–25 days) is most critical.'],
+    care: 'Avoid excess irrigation in heavy soils; irrigate at crown-root initiation only.',
+    mandi: 'MSP ~₹2,275/quintal. Timely CRI irrigation raises yield by 20–30%.'
+  },
+  maize: {
+    wind: 'Kharif · Jun–Jul',
+    dos: ['Use hybrids like PMH-2 / Vivek 45 suited to coastal belt.', 'Maintain 60×25 cm plant geometry.', 'Apply zinc sulphate 10 kg/acre in low-zinc soils.'],
+    care: 'Waterlogging within 3rd leaf stage severely stunts growth — ensure drainage.',
+    mandi: 'Market rates ₹2,000–2,300/quintal. Green cobs give early cash by 75 days.'
+  },
+  jowar: {
+    wind: 'Kharif / Rabi',
+    dos: ['Sow CSH-16 (kharif) rainfed, no extra irrigation needed.', 'Thin to 15 cm spacing at 3–4 leaf stage.', 'Avoid continuous sorghum to prevent shoot fly.'],
+    care: 'Shoot fly: treat seed with imidacloprid before sowing.',
+    mandi: 'Grain ₹2,400–2,600/quintal; fodder adds extra income.'
+  },
+  bajra: {
+    wind: 'Kharif · Jun–Jul',
+    dos: ['Use hybrid HHB-67 Improved (Early maturity 65 days).', 'Seed rate 4 kg/acre with 45×15 cm spacing.', 'Top-dress urea at 30 DAS for head size.'],
+    care: 'Downy mildew: avoid sowing too early in monsoon and rotate fields.',
+    mandi: 'MSP ₹2,625/quintal. Fodder value high for dairy farmers.'
+  },
+  ragi: {
+    wind: 'Kharif · Jul–Aug',
+    dos: ['Use GPU-67 / CFMV-2 varieties.', 'Sow on ridges 25 cm apart with 10 cm plant spacing.', 'Apply FYM 5 t/acre for calcium-rich grains.'],
+    care: 'Blast at flowering — spray tricyclazole if black neck appears.',
+    mandi: 'MSP ₹4,290/quintal — strong demand in millet-revival programs.'
+  },
+  pulses: {
+    wind: 'Kharif · Jun–Jul',
+    dos: ['Tur/Arhar variety GT-101 (180 days).', 'Seed inoculate with Rhizobium culture.', 'Intercrop with maize/cotton in 1:1 ratio.'],
+    care: 'Avoid waterlogging in pod-filling stage; drain channels empty.',
+    mandi: 'Tur dal wholesale ₹11,000–13,000/quintal.'
+  },
+  moong: {
+    wind: 'Rabi/Summer',
+    dos: ['Use SML-668 / IPM 02-3 short-duration varieties.', 'Rhizobium + PSB seed treatment is must.', 'Irrigate at flowering and pod filling.'],
+    care: 'Yellow mosaic virus — use yellow sticky traps and resistant varieties.',
+    mandi: 'MSP ₹8,688/quintal; 60–65 day harvest opens window for next crop.'
+  },
+  urad: {
+    wind: 'Kharif · Jul',
+    dos: ['Sow LBG-20 / Pant U-19.', '25 kg seed/acre with 30×10 cm spacing.', 'Two weedings at 15 and 30 DAS.'],
+    care: 'Cercospora leaf spot — seed treat with carbendazim.',
+    mandi: 'MSP ₹8,000/quintal; good for crop rotation with rice.'
+  },
+  chana: {
+    wind: 'Rabi · Oct–Nov',
+    dos: ['Use JG-16 / Pusa-3913 varieties.', 'Sow on retained moisture; no pre-sowing irrigation.', 'Neem-coated urea to reduce losses.'],
+    care: 'Pod borer — install pheromone traps at 10/acre at flowering.',
+    mandi: 'MSP ₹5,440/quintal; de-stocking high in mandi season.'
+  },
+  lentil: {
+    wind: 'Rabi · Oct–Nov',
+    dos: ['Use DPL-15 / Subrata varieties in residual moisture.', 'Rhizobium culture seed treatment.', 'Hand weeding once at 4–5 leaf stage.'],
+    care: 'Avoid heavy soils & waterlogging; lentil is drought-sensitive early.',
+    mandi: 'MSP ₹6,425/quintal for fair average quality.'
+  },
+  groundnut: {
+    wind: 'Kharif · Jun',
+    dos: ['Use TMV-2 / JL-24 bunch type varieties.', 'Gypsum 200 kg/acre at pegging stage.', 'Seed dressing with imidacloprid + Thiram.'],
+    care: 'Leaf spot (Tikka) — spray chlorothalonil at 60 DAS.',
+    mandi: 'Kernel ₹6,500–7,000/quintal; oil crushers active in Odisha.'
+  },
+  mustard: {
+    wind: 'Rabi · Oct–Nov',
+    dos: ['Sow Pusa Bold / NRCHB-101 in well-drained loam.', 'Boron 0.5 g/L spray at 40 DAS for higher seed set.', 'Line sowing 30×10 cm, 5 kg seed/acre.'],
+    care: 'Aphid at flowering — spray dimethoate if 5+ per plant.',
+    mandi: 'MSP ₹5,940/quintal; oil extraction adds value.'
+  },
+  soybean: {
+    wind: 'Kharif · Jun–Jul',
+    dos: ['Use JS-335 / KDS-344.', 'Treat seed with Rhizobium + PSB for nitrogen.', 'Harvest at 13% moisture to retain oil content.'],
+    care: 'Green stem syndrome — avoid late sowing beyond mid-July.',
+    mandi: 'MSP ₹4,892/quintal; oilmeal export demand strong.'
+  },
+  sunflower: {
+    wind: 'Rabi · Nov',
+    dos: ['Use KBSH-44 / DASF-108 hybrids.', 'Drip irrigation improves oil %', 'Bee-hive placement for better seed set.'],
+    care: 'Head rot — treat seed with mancozeb before sowing.',
+    mandi: 'Market seed ₹5,500–6,000/quintal depending on oil %.'
+  },
+  sesame: {
+    wind: 'Kharif · Jun',
+    dos: ['Sow GT-10 / Prachi on sandy loam.', 'Thin plants to 20 cm spacing.', 'Two harvests/year possible in Odisha.'],
+    care: 'Phyllody disease — remove affected plants immediately.',
+    mandi: 'MSP ₹8,155/quintal; festival gifting demand spikes.'
+  },
+  vegetables: {
+    wind: 'Kharif · Jun–Aug',
+    dos: ['Brinjal: use Arka Kusumakar, spacing 60×60 cm.', 'Okra: Arka Anamika — 2 g seed/kg with azadirachtin.', 'Mulch with straw to cut weeds by 50%.'],
+    care: 'Fruit borer — pheromone + weekly neem spray rotation.',
+    mandi: 'Local mandis pay ₹20–35/kg; cold-chain gives better margins.'
+  },
+  potato: {
+    wind: 'Rabi · Oct–Nov',
+    dos: ['Use Kufri Jyoti / Kufri Pukhraj disease-free tubers.', 'Seed tubers 45–50 g, spacing 50×20 cm.', 'Dehaulm 15 days before harvest to thicken skin.'],
+    care: 'Late blight — treat seed, avoid water stress at tuber bulking.',
+    mandi: 'MSP n/a; contract farming ₹1,200–1,500/quintal at plant gate.'
+  },
+  tomato: {
+    wind: 'Rabi · Sep–Oct',
+    dos: ['Use Arka Rakshak (ToLCV resistant).', 'Stake plants at 60 days to prevent lodging.', 'Drip + fertigation with 20:20:20 weekly.'],
+    care: 'Blossom end rot — calcium nitrate foliar spray at fruit set.',
+    mandi: '₹15–30/kg depending on season; export grade higher.'
+  },
+  onion: {
+    wind: 'Rabi · Oct–Nov',
+    dos: ['Sow Bhima Krishna / Nasik Red.', 'Nursery 10 weeks, transplant 15×10 cm.', 'Stop irrigation 20 days before harvest.'],
+    care: 'Purple blotch — spray mancozeb at fortnightly interval.',
+    mandi: 'MSP ₹2,000–2,500/quintal; storage up to 4 months in ventilated stores.'
+  },
+  chilli: {
+    wind: 'Kharif · Jun–Jul',
+    dos: ['Use K-1 / Bydagi Dabbi for spice.', 'Raised bed planting + drip reduces wilt.', 'Harvest at red stage for better pungency.'],
+    care: 'Anthracnose at fruit — spray copper oxychloride.',
+    mandi: '₹8,000–15,000/quintal dry red; green sold at ₹30–50/kg.'
+  },
+  turmeric: {
+    wind: 'Kharif · May–Jun',
+    dos: ['Use Suguna / Salem variety rhizomes.', 'Mulch 3 weeks with leaves to boost yield.', 'Seed treatment in 0.1% bavistin 30 min.'],
+    care: 'Rhizome rot in heavy rain — proper drainage essential.',
+    mandi: '₹8,000–13,000/quintal; turmeric board MSP support.'
+  },
+  ginger: {
+    wind: 'Kharif · Apr–May',
+    dos: ['Use Suprabha / Suruchi in partial shade.', 'Slice & treat rhizomes with mancozeb + imidacloprid.', 'Heavy mulching for moisture retention.'],
+    care: 'Soft rot at collar — avoid waterlogging, drench metalaxyl.',
+    mandi: '₹10,000–14,000/quintal; exports to Gulf demand increasing.'
+  },
+  garlic: {
+    wind: 'Rabi · Oct–Nov',
+    dos: ['Use Yamuna Safed / G-282 cloves.', 'Clove 2.5 cm top insert, 15×10 cm spacing.', 'Remove scapes for bigger bulbs.'],
+    care: 'Purple blotch — rotations and treated seed reduce incidence.',
+    mandi: '₹18,000–25,000/quintal; value-added garlic paste premium.'
+  },
+  cotton: {
+    wind: 'Kharif · Jun–Jul',
+    dos: ['Use Bt hybrids like RCH-659 BG-II.', 'Spacing 120×60 cm, NPK 100:50:50.', 'Install pink bollworm pheromone traps at 10/acre.'],
+    care: 'Sucking pests early — spray neem + imidacloprid at 30 DAS.',
+    mandi: 'Kapas ₹7,000–7,500/quintal; MSP announced per quintal.'
+  },
+  sugarcane: {
+    wind: 'Plant Feb–Mar / Sep',
+    dos: ['Use Co 0238 / CoLk 94184 early maturing.', 'Ridges & furrows 90 cm apart, two-bud setts.', 'Trash mulching during summer reduces irrigation.'],
+    care: 'Red rot — set treatment with hot water before planting.',
+    mandi: 'SAP ₹3,150–3,800/quintal in Odisha mills.'
+  },
+  jute: {
+    wind: 'Kharif · Apr–May',
+    dos: ['Use JRO-524 (Tangong) / JRC-321.', 'Sow 8 kg/acre, thinning to 10 cm.', 'Retting in clean flowing water for 8–10 days.'],
+    care: 'Stem rot — avoid dense sowing and excess nitrogen.',
+    mandi: 'Fibre ₹4,500–4,800/quintal; BSM demand steady.'
+  },
+  mango: {
+    wind: 'Orchard · flowering Feb',
+    dos: ['Odisha suvari / Amrapali grafted plants 6×6 m.', 'De-blossom heavy flowering in alternate years.', 'Foliar boron + zinc at flower bud initiation.'],
+    care: 'Hopper control at flowering to protect fruit set.',
+    mandi: '₹40–150/kg variety-dependent; RMC export link available.'
+  },
+  banana: {
+    wind: 'Tissue-culture all-year',
+    dos: ['Use tissue-culture G-9 / Grand Naine.', 'Plant 1.8×1.8 m with 100 g 19:19:19/month.', 'Propping & de-suckering from 6th month.'],
+    care: 'Sigatoka — strip lower leaves + protective spray schedule.',
+    mandi: '₹16–28/dozen; ripening chamber adds 40% margin.'
+  }
+};
+
+function buildCurated(meta) {
+  const c = CURATED_INTEL[meta.id];
+  if (!c) {
+    return {
+      wind: 'Sowing season varies by crop & region',
+      dos: ['Use certified hybrid/improved seed.', 'Follow KVK-recommended spacing and nursery practice.', 'Adopt integrated pest management from day one.'],
+      care: 'Contact your nearest ICAR-KVK for block-level package of practices.',
+      mandi: 'Check daily e-NAM/mandi portal rates before sale.'
+    };
+  }
+  return c;
+}
 
 /* ============ METRICS (forecastData.metrics or default) ============ */
 const metrics = () => (state.forecastData && state.forecastData.metrics) || {
@@ -509,14 +707,24 @@ async function checkWeatherAlert() {
 async function fetchTavilyAgriSearch({ cropName, district, block, query, tavilyKey }) {
   if (!API_BASE) return null;
   try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
     const res = await fetch(`${API_BASE}/agri/tavily-search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cropName, district, block, query, tavilyKey })
-    });
-    if (res.ok) return await res.json();
-  } catch (err) { console.warn('fetchTavilyAgriSearch failed', err); }
-  return null;
+      body: JSON.stringify({ cropName, district, block, query, tavilyKey }),
+      signal: ctrl.signal
+    }).finally(() => clearTimeout(t));
+    // Backend returns useful JSON even on 400/502 (message + tavily_detail).
+    // Parse the body regardless of res.ok so the real reason is shown to farmer.
+    const data = await res.json().catch(() => null);
+    if (data) return data;
+    if (res.ok) return { status: 'success', answer: '', results: [] };
+  } catch (err) {
+    console.warn('fetchTavilyAgriSearch failed', err);
+    return { status: 'error', network: true, message: 'Backend not reachable. Showing curated ICAR/KVK advisory.' };
+  }
+  return { status: 'error', message: 'Failed to fetch real-time web search results.' };
 }
 
 async function probeApiBase() {
@@ -610,17 +818,13 @@ async function handleTavilySearch(e) {
   e.preventDefault();
   state.tavilyKey = document.getElementById('tavilyKey').value.trim();
   state.tavilyQuery = document.getElementById('tavilyQuery').value.trim();
-  if (!state.tavilyKey) {
-    state.tavilyError = state.lang === 'hi' ? 'कृपया Tavily API Key दर्ज करें' : state.lang === 'or' ? 'ଦୟାକରି Tavily API Key ପ୍ରବେଶ କରନ୍ତୁ' : 'Please enter your Tavily API Key';
-    renderTavilyModal();
-    return;
-  }
   localStorage.setItem('moes_tavily_key', state.tavilyKey);
   state.tavilyLoading = true;
   state.tavilyError = '';
+  const activeMeta = CROP_DATABASE.find(c => c.id === state.selectedCrop) || CROP_DATABASE[0];
+  state.curated = buildCurated(activeMeta);
   renderTavilyModal();
 
-  const activeMeta = CROP_DATABASE.find(c => c.id === state.selectedCrop) || CROP_DATABASE[0];
   const queryToUse = state.tavilyQuery || `realtime ICAR KVK agricultural advisory weather impact mandi price for ${activeMeta.name} in ${cleanDistrict()} ${location.block} 2026`;
 
   const res = await fetchTavilyAgriSearch({
@@ -633,8 +837,10 @@ async function handleTavilySearch(e) {
   state.tavilyLoading = false;
   if (res && res.status === 'success') {
     state.tavilyResult = res;
+    state.tavilyError = '';
   } else {
-    state.tavilyError = (res && res.message) || 'Failed to fetch Tavily real-time web search results.';
+    state.tavilyError = (res && res.message) || 'Live web search unavailable. Showing curated ICAR/KVK advisory.';
+    if (res && res.tavily_detail) state.tavilyDetail = String(res.tavily_detail).slice(0, 200);
   }
   renderTavilyModal();
 }
