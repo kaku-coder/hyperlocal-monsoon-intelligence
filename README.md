@@ -100,6 +100,7 @@ This platform exists to close the gap between **where weather science happens** 
 | 🩺 **System Health** | Subsystem monitors, latency meters, model-run stamps, governance notices |
 | 🧠 **ML Microservice** | Python FastAPI probabilistic prediction + explainability service |
 | 🌐 **Live Web AI Search** | Real-time SerpApi Google Search & Tavily AI Web Intelligence for ICAR/KVK advisories & mandi prices |
+| 📍 **Live GPS Geocoding** | Instant browser geolocation & OpenStreetMap Nominatim reverse-geocoding to detect district & block |
 | 🔤 **Localization Engine** | Full EN / HI / OR translation engine with text-to-speech |
 
 ---
