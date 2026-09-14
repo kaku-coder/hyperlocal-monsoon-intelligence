@@ -1,6 +1,7 @@
 /**
  * API Service Client for Frontend
  * Connects to Express Backend with automatic fallback if backend is momentarily unreachable.
+ * @module Services/API
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
