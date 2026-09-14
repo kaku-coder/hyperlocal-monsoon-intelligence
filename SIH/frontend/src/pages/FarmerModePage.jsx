@@ -10,6 +10,7 @@ import {
   Volume2, 
   VolumeX, 
   MapPin, 
+  Navigation,
   Calendar, 
   CheckCircle2, 
   AlertTriangle,
@@ -33,6 +34,10 @@ import {
 
 const CROP_CATEGORIES = ['All', 'Cereals', 'Pulses', 'Oilseeds', 'Vegetables', 'Spices', 'Cash Crops', 'Fruits'];
 
+/**
+ * Full Crop Catalog Database for Hyperlocal Farmer Advisories
+ * @type {Array<{id: string, category: string, name: string, name_hi: string, name_or: string, icon: string}>}
+ */
 const CROP_DATABASE = [
   // 1. Cereals & Millets
   { id: 'rice', category: 'Cereals', name: 'Rice (Paddy)', name_hi: 'धान (चावल)', name_or: 'ଧାନ (Paddy)', icon: '🌾' },
@@ -79,7 +84,9 @@ export const FarmerModePage = () => {
     farmerLanguage, 
     setFarmerLanguage,
     selectedBlock,
+    setSelectedBlock,
     selectedDistrict,
+    setSelectedDistrict,
     selectedCrop,
     setSelectedCrop,
     forecastData,
@@ -121,6 +128,37 @@ export const FarmerModePage = () => {
   const cleanDistrict = (selectedDistrict || 'Khordha')
     .replace(/mayurbhaj/i, 'Mayurbhanj')
     .replace(/khurda/i, 'Khordha');
+
+  const detectLiveGPS = () => {
+    if (!navigator.geolocation) {
+      alert("GPS not supported by your browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`);
+          const data = await res.json();
+          if (data && data.address) {
+            const addr = data.address;
+            const distRaw = addr.state_district || addr.district || addr.county || addr.city || 'Khordha';
+            const distClean = distRaw.replace(/ district/i, '').trim();
+            const blockRaw = addr.suburb || addr.town || addr.village || addr.city_district || `${distClean} Sadar`;
+
+            if (setSelectedDistrict) setSelectedDistrict(distClean);
+            if (setSelectedBlock) setSelectedBlock(blockRaw);
+          }
+        } catch (e) {
+          console.warn("GPS geocode error:", e);
+        }
+      },
+      (err) => {
+        console.warn("GPS permission denied:", err);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   // Auto-fetch real-time web intelligence via Tavily API whenever selectedCrop, selectedBlock, or selectedDistrict changes
   useEffect(() => {
@@ -416,7 +454,7 @@ export const FarmerModePage = () => {
     }
 
     setTtsError(false);
-    const textToRead = `${t.appTitle || 'Monsoon Saathi'}. ${t.location || 'Location'}: ${selectedBlock}, ${cleanDistrict}. ${activeAdvisory.cropMeta.name_en}. ${activeAdvisory.headline}. ${activeAdvisory.dos.join('. ')}`;
+    const textToRead = `${t.appTitle || "Monsoon Saathi"}. ${selectedBlock}, ${cleanDistrict}. ${activeAdvisory.cropMeta.name}. ${activeAdvisory.headline}. ${activeAdvisory.dos.join('. ')}`;
 
     playTextToSpeech({
       text: textToRead,
@@ -433,11 +471,12 @@ export const FarmerModePage = () => {
   const handleCheckWeather = async () => {
     setCheckingWeather(true);
     setSmsSent(false);
-    const phoneNumber = user?.phoneNumber || localStorage.getItem('moes_phone') || '9508165261';
+
+    const phoneNumber = user?.phoneNumber || localStorage.getItem('moes_phone') || '9876543210';
     const result = await checkWeatherAlert({
-      district: cleanDistrict,
-      block: selectedBlock,
-      phoneNumber
+      district_name: cleanDistrict,
+      block_name: selectedBlock,
+      phone_number: phoneNumber
     });
     setNowcastData(result);
     setCheckingWeather(false);
@@ -469,9 +508,9 @@ export const FarmerModePage = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-950 px-3 py-4 sm:p-6 flex flex-col items-center">
+    <div className="flex-1 overflow-y-auto bg-slate-950 px-3 py-4 sm:p-6 flex flex-col items-center w-full">
       
-      <div className="w-full max-w-lg space-y-4 font-sans">
+      <div className="w-full max-w-7xl mx-auto space-y-5 font-sans">
         
         {/* Top Header Card */}
         <div className="rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-800 p-4 text-white shadow-xl flex items-center justify-between">
@@ -805,7 +844,7 @@ export const FarmerModePage = () => {
                     <span>Live Web Sources ({tavilyResult.results.length}):</span>
                     <span className="text-emerald-400 text-[9px]">Verified ICAR/Govt Feeds</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                     {tavilyResult.results.slice(0, 4).map((item, idx) => (
                       <a
                         key={idx}
