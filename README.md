@@ -264,7 +264,7 @@ sih/
     │       ├── context/           # Global app state (location, language, session)
     │       ├── pages/             # All 13 feature pages
     │       ├── services/          # API client
-    │       ├── utils/             # Localization, risk, TTS, socket helpers
+    │       ├── utils/             # Localization (EN/HI/OR), risk scoring, TTS voice synthesis, socket helpers
     │       └── config/            # Firebase config
     └── ml-service/                # Python FastAPI ML microservice (port 8008)
         ├── main.py                # Health / predict / explain / nowcast routes
