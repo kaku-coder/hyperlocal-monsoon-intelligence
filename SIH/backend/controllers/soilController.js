@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Soil Analysis Controller
+ * @module controllers/soilController
+ * @description Provides HTTP endpoint handlers for soil analysis, Vision AI processing, and crop recommendations.
+ */
+
 import { analyzeSoilImageVision } from "../services/soilVisionService.js";
 import { calculateCropSuitability } from "../services/cropRecommendationEngine.js";
 import { saveSoilReportToStore, getSoilReportsFromStore } from "../models/soilAnalysis.model.js";
