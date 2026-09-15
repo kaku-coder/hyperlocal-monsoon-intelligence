@@ -698,10 +698,13 @@ export const SoilScannerPage = () => {
               </div>
             </div>
 
-            {/* STEP 7: CROP CARE GUIDANCE FOR SELECTED CROP */}
+            {/* STEP 7: CROP CARE GUIDANCE FOR SELECTED CROP — full-width premium */}
             {report.cropRecommendations?.[selectedResultCropIndex] && (
-              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 backdrop-blur-md shadow-lg">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="w-full rounded-3xl border border-slate-700/60 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 p-5 sm:p-7 xl:p-8 space-y-5 shadow-2xl shadow-black/40 relative overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-20 right-10 h-56 w-56 rounded-full bg-emerald-500/10 blur-[80px]" />
+                </div>
+                <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{report.cropRecommendations[selectedResultCropIndex].icon}</span>
                     <div>
