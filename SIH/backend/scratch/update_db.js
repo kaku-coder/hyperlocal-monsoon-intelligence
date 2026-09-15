@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Database Seed & Update Utility Script
+ * @description Populates geospatial location metrics, panchayats, and historical rainfall anomalies for Odisha & national districts.
+ */
 const fs = require('fs');
 
 const locations = [
