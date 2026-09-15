@@ -504,12 +504,24 @@ export const FarmerModePage = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-950 px-3 py-4 sm:p-6 flex flex-col items-center w-full">
+    <div className="flex-1 w-full min-w-0 min-h-screen overflow-y-auto bg-slate-950 relative">
+      {/* ambient full-width glow background */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-emerald-600/15 blur-[100px]" />
+        <div className="absolute top-40 -right-24 h-96 w-96 rounded-full bg-teal-500/10 blur-[110px]" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-sky-500/[0.07] blur-[100px]" />
+      </div>
 
-      <div className="w-full max-w-7xl mx-auto space-y-5 font-sans">
+      <div className="relative w-full max-w-none px-3 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-12 2xl:px-16 space-y-5 xl:space-y-7 font-sans">
 
-        {/* Top Header Card */}
-        <div className="rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-800 p-4 text-white shadow-xl flex items-center justify-between">
+        {/* Top Header Card — full-width premium hero */}
+        <div className="relative overflow-hidden rounded-3xl border border-emerald-400/25 bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 p-4 sm:p-6 lg:p-7 xl:p-8 text-white shadow-2xl shadow-emerald-950/40">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-20 right-16 h-56 w-56 rounded-full bg-emerald-500/20 blur-[80px]" />
+            <div className="absolute -bottom-24 left-1/4 h-56 w-56 rounded-full bg-teal-400/15 blur-[80px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] bg-[size:22px_22px]" />
+          </div>
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:gap-6">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md text-2xl shadow-inner">
               {activeAdvisory.cropMeta.icon}
