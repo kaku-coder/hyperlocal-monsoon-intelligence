@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Soil Scanner Page Component
+ * @description Provides Vision AI soil sample upload, analysis, and custom crop care recommendation report engine.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { analyzeSoilApi, fetchSoilHistoryApi } from '../services/api';
