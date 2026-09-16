@@ -1,3 +1,7 @@
+"""
+Hyperlocal Monsoon Intelligence - ML Inference & Explanation Microservice
+Provides RESTful FastAPI endpoints for ML predictions, nowcasting, XAI explainability, and historical analytics.
+"""
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.schemas.prediction import PredictionRequest, PredictionResponse, ExplainabilityResponse, NowcastRequest, NowcastResponse
