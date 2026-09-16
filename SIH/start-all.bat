@@ -1,4 +1,8 @@
 @echo off
+REM =====================================================================
+REM Hyperlocal Monsoon Intelligence Prototype Batch Launcher
+REM Starts Python FastAPI ML Service, Express Backend API, and Vite UI.
+REM =====================================================================
 echo =====================================================================
 echo  Starting MoES / NCMRWF Hyperlocal Monsoon Prediction Prototype
 echo =====================================================================
