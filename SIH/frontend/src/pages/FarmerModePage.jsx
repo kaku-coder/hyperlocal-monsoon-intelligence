@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Farmer Mode Component (Monsoon Saathi)
+ * @description Provides a mobile-first, multi-lingual audio UI tailored for local farmers.
+ */
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { translations } from '../utils/localization';
