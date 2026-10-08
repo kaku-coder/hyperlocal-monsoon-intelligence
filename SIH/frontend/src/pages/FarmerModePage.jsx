@@ -565,6 +565,7 @@ export const FarmerModePage = () => {
             ))}
           </div>
         </div>
+      </div>
 
         {/* 3 Quick Status Indicators */}
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -669,7 +670,7 @@ export const FarmerModePage = () => {
             <div className="rounded-xl bg-emerald-950/40 border border-emerald-600/40 p-3 space-y-1.5 shadow-inner">
               <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300 uppercase tracking-wider">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <span>{lang === 'hi' ? 'क्या करें (Recommended Actions)' : lang === 'or' ? '<ctrl42>କଣ କରିବେ (Recommended Actions)' : 'Recommended Actions (Do\'s)'}</span>
+                <span>{lang === 'hi' ? 'क्या करें (Recommended Actions)' : lang === 'or' ? 'କଣ କରିବେ (Recommended Actions)' : 'Recommended Actions (Do\'s)'}</span>
               </div>
               <ul className="space-y-1">
                 {activeAdvisory.dos.map((item, idx) => (

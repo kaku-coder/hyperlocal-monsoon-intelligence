@@ -11,7 +11,7 @@ const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
   // Navigation & Mode
-  const [activeTab, setActiveTab] = useState('command-center');
+  const [activeTab, setActiveTab] = useState('command-center'); 
   const [farmerLanguage, setFarmerLanguage] = useState('en'); // 'en', 'hi', 'or'
   const [theme, setTheme] = useState('dark'); // 'dark' or 'light'
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

@@ -26,8 +26,8 @@ export const LandingPage = () => {
       
       {/* Hero Section */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-gov-card to-slate-950 border border-slate-800 p-8 sm:p-12 shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-10 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-0 -mt-10 -ml-10 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/3 -mb-10 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-300">
